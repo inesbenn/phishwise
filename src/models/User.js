@@ -6,7 +6,7 @@ const userSchema = new Schema({
   lastName:    { type: String, required: true },   // Champs obligatoires  
   email:       { type: String, required: true, unique: true },  
   password:    { type: String, required: true, select: false },  // Masqué par défaut :contentReference[oaicite:0]{index=0}  
-  role:        { type: String, enum: ['admin','analyst','viewer'], default: 'viewer' },  
+  role:        { type: String, enum: ['Admin','Manager','Analyste','Cible'], default: 'Cible' },  
   office:      { type: String },  
   country:     { type: String },  
   status:      { type: String, enum: ['active','inactive','suspended'], default: 'active' }  // Nouveau statut :contentReference[oaicite:1]{index=1}  

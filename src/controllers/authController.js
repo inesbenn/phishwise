@@ -5,9 +5,9 @@ const User   = require('../models/User');
 
 // — Register
 exports.register = async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, role } = req.body;  // ← on récupère role  
   const hash = await bcrypt.hash(password, 10);   // Hash du mot de passe :contentReference[oaicite:8]{index=8}
-  const user = await User.create({ firstName, lastName, email, password: hash });
+  const user = await User.create({ firstName, lastName, email, password: hash,role });
   res.status(201).json({ message: 'Utilisateur créé', userId: user._id });
 };
 
@@ -71,4 +71,4 @@ exports.resetPassword = async (req, res) => {
   } catch {
     return res.status(400).json({ message: 'Token invalide ou expiré' });
   }
-};
+}

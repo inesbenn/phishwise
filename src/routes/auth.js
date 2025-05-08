@@ -27,7 +27,9 @@ router.post(
         .normalizeEmail(),
       body('password')
         .isLength({ min: 6 }).withMessage('6 caractères minimum requis')
-        .matches(/[0-9]/).withMessage('Doit contenir un chiffre')
+        .matches(/[0-9]/).withMessage('Doit contenir un chiffre'),
+      body('role')
+        .optional().isIn(['Admin','Manager','Analyste','Cible']).withMessage('Rôle invalide')
     ]),
     authController.register
   );
