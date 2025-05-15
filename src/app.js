@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const morgan   = require('morgan');
 const cors     = require('cors');
 
+
 const app = express();
 
 // Debug
@@ -28,6 +29,10 @@ app.use('/api/auth', authRoutes);
 
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
+
+const campaignRoutes = require('./routes/campaigns');
+app.use('/api/campaigns', campaignRoutes);
+
 
 
 // Routes supplémentaires
