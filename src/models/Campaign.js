@@ -1,3 +1,4 @@
+// src/models/Campaign.js
 const { Schema, model } = require('mongoose');
 
 const campaignSchema = new Schema({
@@ -9,6 +10,11 @@ const campaignSchema = new Schema({
     type: Date,
     required: true
   },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   targets: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
@@ -18,7 +24,6 @@ const campaignSchema = new Schema({
     enum: ['draft', 'running', 'completed'],
     default: 'draft'
   }
-  // À compléter plus tard : newsFilters, emailTemplates, landingPageUrl, etc.
 }, { timestamps: true });
 
 module.exports = model('Campaign', campaignSchema);
