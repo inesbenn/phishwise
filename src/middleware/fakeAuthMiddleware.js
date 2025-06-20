@@ -1,3 +1,4 @@
+
 // src/middleware/fakeAuthMiddleware.js
 /**
  * Middleware factice pour simuler un utilisateur connecté.

@@ -1,8 +1,9 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
-const Campaign = require('../models/Campaign');
+const { body, param } = require('express-validator'); // Gardez validationResult hors des routes pour le middleware
+const mongoose = require('mongoose'); // Toujours nécessaire si vous faites new ObjectId ici
+const Campaign = require('../models/Campaign'); // Nécessaire pour la route GET /
 const fakeAuthMiddleware = require('../middleware/fakeAuthMiddleware');
+const campaignController = require('../controllers/campaignController'); // Le contrôleur de campagne modifié
 
 const router = express.Router();
 
@@ -20,33 +21,23 @@ router.post(
       .isISO8601().withMessage('Date invalide')
       .toDate()
   ],
+  campaignController.createCampaign // Appelle la fonction du contrôleur de campagne
+);
+
+// GET /api/campaigns — renvoie toutes les campagnes
+router.get(
+  '/',
+  fakeAuthMiddleware,
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ errors: errors.array() });
-
-    // Conversion de l'ID utilisateur factice en ObjectId
-    let userId;
     try {
-      userId = new mongoose.Types.ObjectId(req.user.id);
-    } catch {
-      // Cette fois, comme l'ID est valide, on ne devrait pas passer ici
-      return res.status(400).json({ message: 'ID utilisateur invalide' });
-    }
-
-    try {
-      const campaign = new Campaign({
-        name: req.body.name,
-        startDate: req.body.startDate,
-        createdBy: userId
-      });
-      await campaign.save();
-      res.status(201).json(campaign);
+      const campaigns = await Campaign.find(); // Renommé 'camps' en 'campaigns' pour la cohérence
+      res.json(campaigns);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
+
 
 /**
  * PUT /api/campaigns/:id/step/0
@@ -56,33 +47,16 @@ router.put(
   '/:id/step/0',
   fakeAuthMiddleware,
   [
+    param('id').isMongoId().withMessage('ID de campagne invalide'),
     body('name')
       .notEmpty().withMessage('Le nom est requis'),
     body('startDate')
       .isISO8601().withMessage('Date invalide')
       .toDate()
   ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ errors: errors.array() });
-
-    try {
-      const camp = await Campaign.findByIdAndUpdate(
-        req.params.id,
-        {
-          name: req.body.name,
-          startDate: req.body.startDate
-        },
-        { new: true }
-      );
-      if (!camp)
-        return res.status(404).json({ message: 'Campagne non trouvée' });
-      res.json(camp);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  }
+  campaignController.updateStep0 // Appelle la fonction du contrôleur de campagne
 );
+
+// NOTE: Toutes les routes de cibles (Step 1, getTargets, updateTarget, deleteTarget) ont été déplacées vers src/routes/targets.js
 
 module.exports = router;

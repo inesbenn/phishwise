@@ -29,6 +29,7 @@ mongoose.connect(process.env.MONGO_URI, {
 const authRoutes      = require('./routes/auth');
 const userRoutes      = require('./routes/users');
 const campaignRoutes  = require('./routes/campaigns');
+const targetRoutes    = require('./routes/targets');
 const authMiddleware  = require('./middleware/authMiddleware');
 
 app.use('/api/auth', authRoutes);
@@ -39,7 +40,10 @@ app.use('/api/users', userRoutes)
 // app.use(authMiddleware);
 
 // Routes de campagne (utilisent fakeAuthMiddleware en local)
-app.use('/api/campaigns', campaignRoutes)
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/campaigns', targetRoutes);
+app.get('/', (req, res) => res.send('OK'));
+app.use((req, res) => res.status(404).json({ error: 'Route non trouvée' }));
 
 // Routes supplémentaires
 app.get('/',       (req, res) => res.json({ message: 'OK' }));
