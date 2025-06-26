@@ -28,24 +28,28 @@ const campaignSchema = new Schema({
  targets: [ targetSchema ],
  // Étape 2 : Actualités & Sujets
   step2: {
-    filters: {
-      country:     { type: String, default: 'fr' },
-      theme:       { type: String, default: 'cybersecurity' },
-      credibility: { type: Number, default: 0 }
-    },
+filters: {
+  country:     { type: String, default: 'fr' },
+  theme:       { type: String, default: 'cybersecurity' },
+  credibility: { type: Number, default: 0  }
+},
     news: [{
-      id:          { type: Number },
-      title:       { type: String },
-      source:      { type: String },
-      date:        { type: Date },
-      credibility: { type: Number }
+      id: { type: Schema.Types.Mixed }, // String for 'news_<timestamp>_<index>'
+      title: { type: String },
+      description: { type: String },
+      excerpt: { type: String },
+      source: { type: String },
+      date: { type: Date },
+      credibility: { type: Number },
+      url: { type: String },
+      urlToImage: { type: String }
     }],
     suggestions: [{
       subject: { type: String },
       summary: { type: String }
     }]
   },
-  
+
   status: {
     type: String,
     enum: ['draft', 'running', 'completed'],
