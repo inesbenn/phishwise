@@ -32,6 +32,7 @@ const campaignRoutes  = require('./routes/campaigns');
 const targetRoutes    = require('./routes/targets');
 const authMiddleware  = require('./middleware/authMiddleware');
 const modelMailRoutes = require('./routes/ModelMail');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes)
 

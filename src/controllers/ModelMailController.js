@@ -1,17 +1,21 @@
 // src/controllers/ModelMailController.js
 const Campaign = require('../models/Campaign');
 const NewsService = require('../services/NewsService');
-// TEMPORAIREMENT DÉSACTIVÉ - Service OpenAI non disponible
-//const OpenAIService = require('../services/OpenAIService');
+// CORRECTION: Import GroqService réactivé
+const GroqService = require('../services/GroqService');
 
 class ModelMailController {
 
-  // Vérification préalable de la clé API
+  // Vérification préalable des clés API
    static init() {
      if (!process.env.NEWS_API_KEY) {
       console.warn('⚠️ NEWS_API_KEY is not defined in environment variables');
     }
+    if (!process.env.GROQ_API_KEY) {
+      console.warn('⚠️ GROQ_API_KEY is not defined in environment variables');
+    }
   }
+
   /**
    * Récupère les actualités dynamiques depuis NewsAPI
    * GET /api/campaigns/:campaignId/news
@@ -201,11 +205,7 @@ class ModelMailController {
           basedOn: selectedNews[0]?.title || "Actualité sélectionnée"
         }
       ];
-
-      // ANCIEN CODE OpenAI (temporairement désactivé)
-      // const suggestions = await OpenAIService.generatePhishingSuggestions(selectedNews);
-
-      // Sauvegarder les suggestions dans la campagne
+            // Sauvegarder les suggestions dans la campagne
       if (!campaign.step2) {
         campaign.step2 = {
           filters: {},
@@ -377,6 +377,406 @@ class ModelMailController {
       });
     }
   }
+
+  /**
+   * Génère des templates d'emails basés sur les actualités sélectionnées
+   * POST /api/campaigns/:campaignId/templates/generate
+   */
+  static async generateEmailTemplates(req, res) {
+    try {
+      const { campaignId } = req.params;
+      const { useSelectedNews = true, customParams = {} } = req.body;
+
+      // Vérifier que la campagne existe
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      // Vérifier qu'il y a des actualités sélectionnées si nécessaire
+      if (useSelectedNews && (!campaign.step2?.news || campaign.step2.news.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aucune actualité sélectionnée. Veuillez d\'abord compléter l\'étape 2.'
+        });
+      }
+
+      const selectedNews = useSelectedNews ? campaign.step2.news : [];
+      const targets = campaign.targets || [];
+
+      // Générer les templates via Groq
+      console.log(`🤖 Génération de templates pour la campagne ${campaignId}...`);
+      const generatedTemplates = await GroqService.generatePhishingTemplates(selectedNews, targets);
+
+      // Initialiser step3 si nécessaire
+      if (!campaign.step3) {
+        campaign.step3 = {
+          templates: [],
+          selectedTemplate: null,
+          generatedAt: null
+        };
+      }
+
+      // Sauvegarder les templates générés
+      campaign.step3.templates = generatedTemplates;
+      campaign.step3.generatedAt = new Date();
+
+      await campaign.save();
+
+      res.json({
+        success: true,
+        message: 'Templates d\'emails générés avec succès',
+        data: {
+          templates: generatedTemplates,
+          count: generatedTemplates.length,
+          generatedAt: campaign.step3.generatedAt,
+          basedOnNews: selectedNews.map(news => news.title)
+        }
+      });
+
+    } catch (error) {
+      console.error('🔥 Erreur generateEmailTemplates:', error);
+      
+      // Gestion spécifique des erreurs Groq/IA
+      if (error.message.includes('API key') || error.message.includes('GROQ_API_KEY')) {
+        return res.status(500).json({
+          success: false,
+          message: 'Service de génération IA non configuré',
+          error: 'Clé API Groq manquante'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la génération des templates',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Récupère les templates existants pour une campagne
+   * GET /api/campaigns/:campaignId/templates
+   */
+  static async getEmailTemplates(req, res) {
+    try {
+      const { campaignId } = req.params;
+
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      const step3Data = campaign.step3 || {
+        templates: [],
+        selectedTemplate: null,
+        generatedAt: null
+      };
+
+      res.json({
+        success: true,
+        data: step3Data
+      });
+
+    } catch (error) {
+      console.error('Erreur getEmailTemplates:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la récupération des templates',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Sélectionne un template spécifique pour la campagne
+   * PUT /api/campaigns/:campaignId/templates/:templateId/select
+   */
+  static async selectEmailTemplate(req, res) {
+    try {
+      const { campaignId, templateId } = req.params;
+
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      // Vérifier que le template existe
+      if (!campaign.step3?.templates) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aucun template disponible'
+        });
+      }
+
+      const selectedTemplate = campaign.step3.templates.find(t => t.id === templateId);
+      if (!selectedTemplate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template non trouvé'
+        });
+      }
+
+      // Sauvegarder la sélection
+      campaign.step3.selectedTemplate = templateId;
+      await campaign.save();
+
+      res.json({
+        success: true,
+        message: 'Template sélectionné',
+        data: {
+          selectedTemplate: templateId,
+          template: selectedTemplate
+        }
+      });
+
+    } catch (error) {
+      console.error('Erreur selectEmailTemplate:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la sélection du template',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Génère un template personnalisé
+   * POST /api/campaigns/:campaignId/templates/custom
+   */
+  static async generateCustomTemplate(req, res) {
+    try {
+      const { campaignId } = req.params;
+      const { type, sophistication, newsId, customInstructions } = req.body;
+
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      // Récupérer l'actualité spécifique si fournie
+      let selectedNews = null;
+      if (newsId && campaign.step2?.news) {
+        selectedNews = campaign.step2.news.find(news => news.id === newsId);
+      }
+
+      // Générer le template personnalisé
+      const customTemplate = await GroqService.generateCustomTemplate({
+        type,
+        sophistication,
+        news: selectedNews,
+        customInstructions
+      });
+
+      // Ajouter le template aux templates existants
+      if (!campaign.step3) {
+        campaign.step3 = { templates: [], selectedTemplate: null, generatedAt: null };
+      }
+
+      campaign.step3.templates.push(customTemplate);
+      await campaign.save();
+
+      res.json({
+        success: true,
+        message: 'Template personnalisé généré',
+        data: {
+          template: customTemplate,
+          totalTemplates: campaign.step3.templates.length
+        }
+      });
+
+    } catch (error) {
+      console.error('Erreur generateCustomTemplate:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la génération du template personnalisé',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Supprime un template spécifique
+   * DELETE /api/campaigns/:campaignId/templates/:templateId
+   */
+  static async deleteEmailTemplate(req, res) {
+    try {
+      const { campaignId, templateId } = req.params;
+
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      if (!campaign.step3?.templates) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aucun template disponible'
+        });
+      }
+
+      // Filtrer le template à supprimer
+      const originalCount = campaign.step3.templates.length;
+      campaign.step3.templates = campaign.step3.templates.filter(t => t.id !== templateId);
+
+      if (campaign.step3.templates.length === originalCount) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template non trouvé'
+        });
+      }
+
+      // Réinitialiser la sélection si le template sélectionné est supprimé
+      if (campaign.step3.selectedTemplate === templateId) {
+        campaign.step3.selectedTemplate = null;
+      }
+
+      await campaign.save();
+
+      res.json({
+        success: true,
+        message: 'Template supprimé',
+        data: {
+          remainingTemplates: campaign.step3.templates.length
+        }
+      });
+
+    } catch (error) {
+      console.error('Erreur deleteEmailTemplate:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la suppression du template',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Prévisualise un template avec des données de test
+   * POST /api/campaigns/:campaignId/templates/:templateId/preview
+   */
+  static async previewEmailTemplate(req, res) {
+    try {
+      const { campaignId, templateId } = req.params;
+      const { sampleData = {} } = req.body;
+
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          message: 'Campagne non trouvée'
+        });
+      }
+
+      const template = campaign.step3?.templates?.find(t => t.id === templateId);
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template non trouvé'
+        });
+      }
+
+      // Données de test par défaut
+      const defaultData = {
+        firstName: sampleData.firstName || 'John',
+        lastName: sampleData.lastName || 'Doe',
+        position: sampleData.position || 'Employé',
+        email: sampleData.email || 'john.doe@example.com'
+      };
+
+      // Remplacer les placeholders
+      let previewHTML = template.content_html;
+      let previewText = template.content_text || '';
+
+      Object.entries(defaultData).forEach(([key, value]) => {
+        const placeholder = new RegExp(`{{${key}}}`, 'g');
+        previewHTML = previewHTML.replace(placeholder, value);
+        previewText = previewText.replace(placeholder, value);
+      });
+
+      res.json({
+        success: true,
+        data: {
+          template: {
+            ...template,
+            preview_html: previewHTML,
+            preview_text: previewText
+          },
+          sampleData: defaultData
+        }
+      });
+
+    } catch (error) {
+      console.error('Erreur previewEmailTemplate:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la prévisualisation',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Test de la connexion Groq
+   * GET /api/groq/test
+   */
+  static async testGroqConnection(req, res) {
+    try {
+      // Vérifier d'abord si la clé API est configurée
+      if (!process.env.GROQ_API_KEY) {
+        return res.status(500).json({
+          success: false,
+          message: 'Clé API Groq non configurée',
+          error: 'GROQ_API_KEY manquante dans les variables d\'environnement',
+          details: {
+            hasApiKey: false,
+            service: 'Groq/Llama-3.3-70b-versatile'
+          }
+        });
+      }
+
+      const isConnected = await GroqService.testConnection();
+      
+      res.json({
+        success: isConnected,
+        message: isConnected ? 'Connexion Groq fonctionnelle' : 'Échec de connexion Groq',
+        data: {
+          service: 'Groq/Llama-3.3-70b-versatile',
+          status: isConnected ? 'connected' : 'failed',
+          timestamp: new Date(),
+          hasApiKey: true
+        }
+      });
+    } catch (error) {
+      console.error('🔥 Erreur test Groq:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du test de connexion',
+        error: error.message,
+        details: {
+          hasApiKey: !!process.env.GROQ_API_KEY,
+          errorType: error.constructor.name,
+          service: 'Groq/Llama-3.3-70b-versatile'
+        }
+      });
+    }
+  }
+
 }
 
 module.exports = ModelMailController;

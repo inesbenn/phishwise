@@ -50,6 +50,34 @@ filters: {
     }]
   },
 
+  // Étape 3 : Modèles d'Emails
+  step3: {
+    templates: [{
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      type: { 
+        type: String, 
+        enum: ['security_alert', 'system_notification', 'urgent_update', 'verification', 'generic'],
+        default: 'generic'
+      },
+      sophistication_level: { 
+        type: String, 
+        enum: ['low', 'medium', 'high'],
+        default: 'medium'
+      },
+      subject: { type: String, required: true },
+      content_html: { type: String, required: true },
+      content_text: { type: String },
+      personalization_fields: [{ type: String }],
+      psychological_triggers: [{ type: String }],
+      based_on_news: { type: String },
+      preview: { type: String },
+      created_at: { type: Date, default: Date.now }
+    }],
+    selectedTemplate: { type: String }, // ID du template sélectionné
+    generatedAt: { type: Date }
+  },
+
   status: {
     type: String,
     enum: ['draft', 'running', 'completed'],
