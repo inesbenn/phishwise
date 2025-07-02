@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Bancaire Sécurisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0e7ff; /* Light blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 30px;
+        }
+        .logo img {
+            width: 150px;
+            height: auto;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a202c;
+        }
+        p {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 17px;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #4c51bf;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px 20px;
+            background-color: #4c51bf; /* Indigo */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #3f45a8;
+        }
+        .extra-links {
+            margin-top: 25px;
+            font-size: 14px;
+        }
+        .extra-links a {
+            color: #4c51bf;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .extra-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <!-- Placeholder for a generic bank logo or icon -->
+            <svg class="mx-auto" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#4c51bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                <path d="M12 12V2m-5 5v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </div>
+        <h1>Accès à votre Compte</h1>
+        <p>Veuillez saisir vos identifiants pour accéder à votre portail bancaire sécurisé.</p>
+        <form action="/login" method="POST">
+            <input type="text" name="username" placeholder="Identifiant ou numéro de client" required>
+            <input type="password" name="password" placeholder="Mot de passe" required>
+            <button type="submit">Se connecter</button>
+        </form>
+        <div class="extra-links">
+            <a href="#">Mot de passe oublié ?</a> | <a href="#">Aide</a>
+        </div>
+    </div>
+</body>
+</html>

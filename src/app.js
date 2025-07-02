@@ -17,6 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
+app.use(express.static('public'));
+
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -32,6 +34,7 @@ const campaignRoutes  = require('./routes/campaigns');
 const targetRoutes    = require('./routes/targets');
 const authMiddleware  = require('./middleware/authMiddleware');
 const modelMailRoutes = require('./routes/ModelMail');
+const landingpageRoutes = require('./routes/landingpage');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes)
@@ -44,7 +47,10 @@ app.use('/api/users', userRoutes)
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/campaigns', targetRoutes);
 
+
 app.use('/api', modelMailRoutes);
+app.use('/api/landingpage', landingpageRoutes);
+
 
 app.get('/', (req, res) => res.send('OK'));
 app.use((req, res) => res.status(404).json({ error: 'Route non trouvée' }));

