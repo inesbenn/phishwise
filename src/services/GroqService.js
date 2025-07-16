@@ -39,325 +39,386 @@ class GroqService {
   }
 
   /**
-   * Génère des templates de fallback en cas d'échec de l'IA
-   * @param {Array} selectedNews - Actualités sélectionnées
+   * Génère des templates de fallback pour un sujet spécifique
+   * @param {Object} newsItem - Actualité sélectionnée
+   * @param {number} templateCount - Nombre de templates à générer
    * @returns {Array} - Templates de fallback
    */
-  generateFallbackTemplates(selectedNews) {
-    const firstNews = selectedNews[0] || { title: 'Actualité récente', excerpt: 'Événement important' };
-    
-    return [
-      {
-        id: `fallback_${Date.now()}_1`,
-        name: "Alerte de sécurité urgente",
-        type: "security_alert",
-        sophistication_level: "low",
-        subject: `URGENT: Action requise suite à ${firstNews.title}`,
-        content_html: `
+  generateFallbackTemplatesForNews(newsItem, templateCount = 3) {
+    const templates = [];
+    const newsTitle = newsItem?.title || 'Actualité récente';
+    const newsExcerpt = newsItem?.excerpt || newsItem?.description || 'Événement important';
+    const timestamp = Date.now();
+
+    for (let i = 0; i < templateCount; i++) {
+      const sophisticationLevels = ['low', 'medium', 'high'];
+      const types = ['security_alert', 'system_notification', 'verification'];
+      const currentLevel = sophisticationLevels[i % 3];
+      const currentType = types[i % 3];
+
+      templates.push({
+        id: `fallback_${timestamp}_${i + 1}`,
+        name: `Template ${currentLevel} - ${newsTitle}`,
+        type: currentType,
+        sophistication_level: currentLevel,
+        subject: this.generateFallbackSubject(newsTitle, currentType, currentLevel),
+        content_html: this.generateFallbackHTML(newsTitle, newsExcerpt, currentType, currentLevel),
+        content_text: this.generateFallbackText(newsTitle, newsExcerpt, currentType, currentLevel),
+        personalization_fields: ["firstName", "lastName", "position"],
+        based_on_news: newsTitle,
+        preview: `Template ${currentLevel} basé sur: ${newsTitle}`,
+        created_at: new Date()
+      });
+    }
+
+    return templates;
+  }
+
+  /**
+   * Génère un sujet de fallback
+   */
+  generateFallbackSubject(newsTitle, type, level) {
+    const subjects = {
+      security_alert: {
+        low: `URGENT: Action requise suite à ${newsTitle}`,
+        medium: `Alerte de sécurité - ${newsTitle}`,
+        high: `Vérification de sécurité suite à l'incident ${newsTitle}`
+      },
+      system_notification: {
+        low: `Mise à jour importante - ${newsTitle}`,
+        medium: `Notification système - Impact ${newsTitle}`,
+        high: `Procédure de conformité suite à ${newsTitle}`
+      },
+      verification: {
+        low: `Vérification de compte nécessaire`,
+        medium: `Validation d'identité requise - ${newsTitle}`,
+        high: `Audit de sécurité suite aux événements ${newsTitle}`
+      }
+    };
+
+    return subjects[type]?.[level] || `Information importante - ${newsTitle}`;
+  }
+
+  /**
+   * Génère le contenu HTML de fallback
+   */
+  generateFallbackHTML(newsTitle, newsExcerpt, type, level) {
+    const baseStyle = "font-family: Arial, sans-serif; margin: 20px;";
+    const urgentStyle = "background: #ff4444; color: white; padding: 10px; border-radius: 5px;";
+    const professionalStyle = "background: #2c5aa0; color: white; padding: 20px; text-align: center;";
+
+    const contents = {
+      security_alert: {
+        low: `
 <html>
-<body style="font-family: Arial, sans-serif; margin: 20px;">
-  <div style="background: #ff4444; color: white; padding: 10px; border-radius: 5px;">
+<body style="${baseStyle}">
+  <div style="${urgentStyle}">
     <h2>⚠️ ALERTE DE SÉCURITÉ</h2>
-  </div>
-  
+    </div>
   <p>Bonjour {{firstName}} {{lastName}},</p>
-  
-  <p>Suite aux récents événements concernant <strong>${firstNews.title}</strong>, votre compte nécessite une vérification immédiate.</p>
-  
-  <p>Des activités suspectes ont été détectées sur votre profil. Pour éviter une suspension de compte, veuillez cliquer sur le lien ci-dessous dans les 24 heures :</p>
-  
+  <p>Suite aux récents événements concernant <strong>${newsTitle}</strong>, votre compte nécessite une vérification immédiate.</p>
+  <p>${newsExcerpt}</p>
   <div style="text-align: center; margin: 20px;">
     <a href="http://example-phishing-simulation.local" style="background: #ff4444; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px;">
       VÉRIFIER MON COMPTE
     </a>
   </div>
-  
-  
-  <p>Cordialement,<br>
-  L'équipe de sécurité</p>
+  <p>Cordialement,<br>L'équipe de sécurité</p>
 </body>
 </html>`,
-        content_text: `ALERTE DE SÉCURITÉ\n\nBonjour {{firstName}} {{lastName}},\n\nSuite aux récents événements concernant ${firstNews.title}, votre compte nécessite une vérification immédiate.\n\nDes activités suspectes ont été détectées. Veuillez vérifier votre compte : http://example-phishing-simulation.local\n\nCordialement,\nL'équipe de sécurité`,
-        personalization_fields: ["firstName", "lastName", "position"],
-        based_on_news: firstNews.title,
-        preview: "Alerte de sécurité urgente demandant une vérification de compte",
-        created_at: new Date()
-      },
-      {
-        id: `fallback_${Date.now()}_2`,
-        name: "Mise à jour système requise",
-        type: "system_notification",
-        sophistication_level: "medium",
-        subject: `Mise à jour importante - ${firstNews.title}`,
-        content_html: `
+        medium: `
 <html>
-<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
-  <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    
-    <div style="background: #2c5aa0; color: white; padding: 20px; text-align: center;">
-      <h1 style="margin: 0;">Mise à jour système</h1>
+<body style="${baseStyle}">
+  <div style="${professionalStyle}">
+    <h1>Alerte de Sécurité</h1>
+  </div>
+  <div style="padding: 20px;">
+    <p>Cher(e) {{firstName}},</p>
+    <p>En raison des événements récents mentionnés dans les actualités (<em>${newsTitle}</em>), notre équipe de sécurité a identifié des risques potentiels.</p>
+    <p><strong>Contexte:</strong> ${newsExcerpt}</p>
+    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <h3>Action requise</h3>
+      <p>Votre profil {{position}} nécessite une validation immédiate.</p>
     </div>
-    
-    <div style="padding: 30px;">
-      <p>Cher(e) {{firstName}},</p>
-      
-      <p>En raison des événements récents mentionnés dans les actualités (${firstNews.title}), notre équipe IT a identifié des vulnérabilités critiques nécessitant une mise à jour immédiate.</p>
-      
-      <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <h3 style="color: #856404; margin-top: 0;">⚡ Action requise</h3>
-        <p style="margin-bottom: 0;">Votre système {{position}} doit être mis à jour avant le <strong>$(date + 2 jours)</strong></p>
-      </div>
-      
-      <p>Pour procéder à la mise à jour :</p>
-      <ol>
-        <li>Cliquez sur le bouton ci-dessous</li>
-        <li>Entrez vos identifiants pour validation</li>
-        <li>Laissez la mise à jour s'installer (5-10 minutes)</li>
-      </ol>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="http://example-phishing-simulation.local" style="background: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-          🔧 LANCER LA MISE À JOUR
-        </a>
-      </div>
-      
-      <p style="font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 15px; margin-top: 30px;">
-      </p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="http://example-phishing-simulation.local" style="background: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px;">
+        VALIDER MON PROFIL
+      </a>
     </div>
   </div>
 </body>
 </html>`,
-        content_text: `Mise à jour système requise\n\nCher(e) {{firstName}},\n\nEn raison des événements récents (${firstNews.title}), une mise à jour critique est nécessaire pour votre système {{position}}.\n\nAction requise avant 48h :\nhttp://example-phishing-simulation.local\n\nÉquipe IT`,
-        personalization_fields: ["firstName", "lastName", "position"],
-        based_on_news: firstNews.title,
-        preview: "Notification de mise à jour système avec urgence modérée",
-        created_at: new Date()
-      },
-      {
-        id: `fallback_${Date.now()}_3`,
-        name: "Vérification d'identité avancée",
-        type: "verification",
-        sophistication_level: "high",
-        subject: `Re: Procédure de vérification suite à l'incident ${firstNews.title}`,
-        content_html: `
+        high: `
 <html>
-<body style="font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background-color: #fafafa; line-height: 1.6;">
+<body style="font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background-color: #fafafa;">
   <div style="max-width: 700px; margin: 0 auto; background: white; border: 1px solid #ddd;">
-    
-    <!-- En-tête officiel -->
-    <div style="background: #1e3a8a; color: white; padding: 15px 30px; border-bottom: 4px solid #3b82f6;">
-      <table width="100%">
-        <tr>
-          <td>
-            <h2 style="margin: 0; font-size: 18px;">🏛️ Direction de la Conformité</h2>
-            <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Département Sécurité & Vérifications</p>
-          </td>
-          <td style="text-align: right; font-size: 11px;">
-            Réf: SEC-${Date.now().toString().slice(-6)}<br>
-            Classification: CONFIDENTIEL
-          </td>
-        </tr>
-      </table>
-    </div>
-    
+    <div style="background: #1e3a8a; color: white; padding: 15px 30px;">
+      <h2>🏛️ Direction de la Sécurité Informatique</h2>
+      <p style="margin: 5px 0 0 0; font-size: 12px;">Réf: SEC-${Date.now().toString().slice(-6)}</p>
+   </div>
     <div style="padding: 30px;">
-      <p style="color: #374151;">À l'attention de : <strong>{{firstName}} {{lastName}}</strong><br>
-      Fonction : {{position}}<br>
-      Date : ${new Date().toLocaleDateString('fr-FR')}</p>
-      
-      <h3 style="color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
-        Objet : Procédure de vérification d'identité renforcée
-      </h3>
-      
+      <p>À l'attention de : <strong>{{firstName}} {{lastName}}</strong><br>
+      Fonction : {{position}}</p>
+      <h3>Objet : Audit de sécurité suite à l'incident "${newsTitle}"</h3>
       <p>Madame, Monsieur,</p>
-      
-      <p>Suite à l'analyse des événements rapportés dans <em>"${firstNews.title}"</em> et dans le cadre du renforcement de nos protocoles de sécurité, votre profil a été sélectionné pour une vérification d'identité approfondie.</p>
-      
+      <p>Suite à l'analyse des événements rapportés dans <em>"${newsTitle}"</em>, votre profil a été sélectionné pour un audit de sécurité approfondi.</p>
+      <p><strong>Contexte détaillé:</strong> ${newsExcerpt}</p>
       <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0;">
-        <h4 style="color: #92400e; margin-top: 0;">📋 Procédure à suivre impérativement</h4>
-        <p style="margin-bottom: 0; color: #78350f;">
-          Conformément à la directive DPO-2024-${Math.floor(Math.random() * 1000)}, vous disposez de <strong>72 heures</strong> pour compléter cette vérification. Un défaut de réponse entraînerait une restriction temporaire de vos accès.
-        </p>
-      </div>
-      
-      <p><strong>Documents requis pour la vérification :</strong></p>
-      <ul style="color: #374151;">
-        <li>Confirmation de votre identité numérique</li>
-        <li>Validation de vos autorisations d'accès actuelles</li>
-        <li>Mise à jour de votre profil de sécurité</li>
-      </ul>
-      
+        <h4>📋 Procédure obligatoire</h4>
+        <p>Vous disposez de 48 heures pour compléter cette vérification.</p>
+    </div>
       <div style="text-align: center; margin: 35px 0;">
-        <p style="margin-bottom: 15px; color: #6b7280; font-size: 14px;">Accès sécurisé au portail de vérification :</p>
-        <a href="http://example-phishing-simulation.local" 
-           style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); 
-                  color: white; 
-                  padding: 18px 35px; 
-                  text-decoration: none; 
-                  border-radius: 6px; 
-                  display: inline-block; 
-                  font-weight: 600;
-                  box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <a href="http://example-phishing-simulation.local" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 18px 35px; text-decoration: none; border-radius: 6px;">
           🔐 ACCÉDER AU PORTAIL SÉCURISÉ
         </a>
       </div>
-      
-      <p style="font-size: 13px; color: #6b7280;">
-        <strong>Note importante :</strong> Ce lien est personnel et confidentiel. Il expire automatiquement après utilisation ou au terme du délai de 72 heures.
-      </p>
-      
-      <p>Nous vous remercions de votre coopération dans cette démarche de sécurisation de nos systèmes.</p>
-      
-      <p style="margin-top: 30px;">
-        Cordialement,<br><br>
-        <strong>Marie-Claire DUBOIS</strong><br>
-        <em>Responsable Conformité & Vérifications</em><br>
-        📧 m.dubois@compliance-dept.local<br>
-        📞 +33 1 XX XX XX XX (poste 4502)
-      </p>
-      
-      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      
-    
+      <p>Cordialement,<br><strong>Service de Sécurité Informatique</strong></p>
     </div>
   </div>
 </body>
-</html>`,
-        content_text: `DIRECTION DE LA CONFORMITÉ - CONFIDENTIEL\nRéf: SEC-${Date.now().toString().slice(-6)}\n\nÀ: {{firstName}} {{lastName}} ({{position}})\nDate: ${new Date().toLocaleDateString('fr-FR')}\n\nObjet: Procédure de vérification d'identité renforcée\n\nMadame, Monsieur,\n\nSuite aux événements "${firstNews.title}", votre profil nécessite une vérification d'identité approfondie.\n\nDélai: 72 heures\nPortail: http://example-phishing-simulation.local\n\nCordialement,\nMarie-Claire DUBOIS\nResponsable Conformité\n\n[Simulation de phishing - Formation cybersécurité]`,
-        personalization_fields: ["firstName", "lastName", "position"],
-        based_on_news: firstNews.title,
-        preview: "Vérification d'identité sophistiquée avec apparence officielle",
-        created_at: new Date()
+</html>`
       }
-    ];
+    };
+
+    return contents[type]?.[level] || contents.security_alert.medium;
   }
 
   /**
-   * Génère des modèles d'emails de phishing basés sur les actualités sélectionnées
+   * Génère le contenu texte de fallback
+   */
+  generateFallbackText(newsTitle, newsExcerpt, type, level) {
+    return `${newsTitle}\n\nBonjour {{firstName}} {{lastName}},\n\nSuite aux événements récents concernant ${newsTitle}, une action est requise.\n\nContexte: ${newsExcerpt}\n\nLien: http://example-phishing-simulation.local\n\nCordialement,\nÉquipe de sécurité\n\n[Simulation de phishing - Formation cybersécurité]`;
+  }
+
+  /**
+   * Génère des modèles d'emails de phishing basés sur PLUSIEURS actualités sélectionnées
    * @param {Array} selectedNews - Actualités sélectionnées
    * @param {Array} targets - Cibles de la campagne pour personnalisation
+   * @param {Object} options - Options de génération
    * @returns {Promise<Array>} - Templates d'emails générés
    */
-  async generatePhishingTemplates(selectedNews, targets = []) {
+  async generatePhishingTemplates(selectedNews, targets = [], options = {}) {
     try {
+      const {
+        templatesPerNews = 3,
+        maxTotalTemplates = 15,
+        sophisticationLevels = ['low', 'medium', 'high'],
+        templateTypes = ['security_alert', 'system_notification', 'verification']
+      } = options;
+
       // Validation des paramètres
       if (!selectedNews || selectedNews.length === 0) {
         console.warn('⚠️ Aucune actualité fournie, utilisation des templates de fallback');
-        return this.generateFallbackTemplates([]);
+        return this.generateFallbackTemplatesForNews({}, 3);
       }
 
       // Vérifier la clé API
       if (!process.env.GROQ_API_KEY) {
         console.warn('⚠️ GROQ_API_KEY manquante, utilisation des templates de fallback');
-        return this.generateFallbackTemplates(selectedNews);
+        return this.generateMultipleFallbackTemplates(selectedNews, templatesPerNews);
       }
 
-      // Construire le contexte des actualités
-      const newsContext = selectedNews.map(news => 
-        `- Titre: ${news.title}\n  Description: ${news.excerpt || news.description || 'Non disponible'}\n  Source: ${news.source || 'Source inconnue'}`
-      ).join('\n\n');
+      console.log(`🤖 Génération de ${templatesPerNews} templates pour ${selectedNews.length} actualités...`);
 
-      // Analyser les cibles pour adapter le contenu
-      const targetCountries = [...new Set(targets.map(t => t.country).filter(Boolean))];
-      const targetPositions = [...new Set(targets.map(t => t.position).filter(Boolean))];
+      const allTemplates = [];
 
-      const prompt = `Tu es un expert en cybersécurité qui crée des simulations d'emails de phishing pour la formation.
+      // Générer des templates pour chaque actualité
+      for (let i = 0; i < selectedNews.length; i++) {
+        const newsItem = selectedNews[i];
+        
+        // Limiter le nombre total de templates
+        if (allTemplates.length >= maxTotalTemplates) {
+          console.log(`⚠️ Limite de ${maxTotalTemplates} templates atteinte`);
+          break;
+        }
 
-CONTEXTE DES ACTUALITÉS:
-${newsContext}
+        try {
+          const templatesForThisNews = await this.generateTemplatesForSingleNews(
+            newsItem, 
+            targets, 
+            templatesPerNews,
+            sophisticationLevels,
+            templateTypes
+          );
+
+          allTemplates.push(...templatesForThisNews);
+          
+          // Petit délai pour éviter le rate limiting
+          if (i < selectedNews.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+        } catch (error) {
+          console.error(`❌ Erreur pour l'actualité "${newsItem.title}":`, error.message);
+          // Ajouter des templates de fallback pour cette actualité
+          const fallbackTemplates = this.generateFallbackTemplatesForNews(newsItem, templatesPerNews);
+          allTemplates.push(...fallbackTemplates);
+        }
+      }
+
+      console.log(`✅ ${allTemplates.length} templates générés au total`);
+      return allTemplates.slice(0, maxTotalTemplates);
+
+    } catch (error) {
+      console.error('❌ Erreur GroqService:', error.message);
+      console.log('🔄 Fallback: génération de templates par défaut');
+      return this.generateMultipleFallbackTemplates(selectedNews || [], templatesPerNews);
+    }
+  }
+
+  /**
+   * Génère des templates pour une seule actualité
+   */
+  async generateTemplatesForSingleNews(newsItem, targets, templateCount, sophisticationLevels, templateTypes) {
+    const targetCountries = [...new Set(targets.map(t => t.country).filter(Boolean))];
+    const targetPositions = [...new Set(targets.map(t => t.position).filter(Boolean))];
+
+    const prompt = `Tu es un expert en cybersécurité qui crée des simulations d'emails de phishing pour la formation.
+
+ACTUALITÉ À UTILISER:
+- Titre: ${newsItem.title}
+- Description: ${newsItem.excerpt || newsItem.description || 'Non disponible'}
+- Source: ${newsItem.source || 'Source inconnue'}
 
 INFORMATIONS SUR LES CIBLES:
 - Pays: ${targetCountries.join(', ') || 'Non spécifié'}
 - Postes: ${targetPositions.join(', ') || 'Non spécifié'}
 
 CONSIGNES STRICTES:
-1. Génère exactement 3 modèles d'emails de phishing (low, medium, high sophistication)
-2. Base-toi sur les actualités fournies
-3. RÉPONDS UNIQUEMENT AVEC DU JSON VALIDE, RIEN D'AUTRE
-4. Utilise ce format exact:
+1. Génère exactement ${templateCount} modèles d'emails de phishing basés sur cette actualité
+2. Utilise les niveaux de sophistication: ${sophisticationLevels.join(', ')}
+3. Varie les types: ${templateTypes.join(', ')}
+4. RÉPONDS UNIQUEMENT AVEC DU JSON VALIDE, RIEN D'AUTRE
+5. Chaque email doit être crédible et se baser sur l'actualité fournie
 
+Format de réponse requis:
 {
   "templates": [
     {
-      "id": "template_1",
-      "name": "Nom du template",
+      "id": "template_${Date.now()}_1",
+      "name": "Nom descriptif du template",
       "type": "security_alert",
       "sophistication_level": "low",
       "subject": "Objet de l'email",
-      "content_html": "HTML complet avec {{firstName}}, {{lastName}}, {{position}}",
-      "content_text": "Version texte",
+      "content_html": "HTML complet avec style et {{firstName}}, {{lastName}}, {{position}}",
+      "content_text": "Version texte propre",
       "personalization_fields": ["firstName", "lastName", "position"],
-      "based_on_news": "Titre de l'actualité",
-      "preview": "Aperçu court"
+      "based_on_news": "${newsItem.title}",
+      "preview": "Aperçu court du template"
     }
   ]
-}`;
+}
 
-      console.log('🤖 Tentative de génération via Groq...');
+IMPORTANT: Base-toi spécifiquement sur l'actualité "${newsItem.title}" pour créer des emails réalistes et contextuels.`;
 
-      const chatCompletion = await this.groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.7,
-        max_completion_tokens: 3000,
-        top_p: 0.9,
-        stream: false
+    const chatCompletion = await this.groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+      max_completion_tokens: 4000,
+      top_p: 0.9,
+      stream: false
+    });
+
+    const response = chatCompletion.choices[0]?.message?.content;
+    
+    if (!response) {
+      throw new Error('Aucune réponse de Groq');
+    }
+
+    const parsedResponse = this.extractAndParseJSON(response);
+
+    if (!parsedResponse.templates || !Array.isArray(parsedResponse.templates)) {
+      throw new Error('Structure invalide dans la réponse');
+    }
+
+    // Valider et enrichir les templates
+    const validTemplates = parsedResponse.templates
+      .filter(template => template.subject && template.content_html)
+      .map((template, index) => ({
+        id: template.id || `groq_${newsItem.title.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${index}`,
+        name: template.name || `Template ${index + 1} - ${newsItem.title}`,
+        type: template.type || templateTypes[index % templateTypes.length],
+        sophistication_level: template.sophistication_level || sophisticationLevels[index % sophisticationLevels.length],
+        subject: template.subject,
+        content_html: template.content_html,
+        content_text: template.content_text || this.extractTextFromHTML(template.content_html),
+        personalization_fields: template.personalization_fields || ["firstName", "lastName", "position"],
+        based_on_news: newsItem.title,
+        preview: template.preview || template.subject,
+        created_at: new Date()
+      }));
+
+    if (validTemplates.length === 0) {
+      throw new Error('Aucun template valide généré');
+    }
+
+    return validTemplates;
+  }
+
+  /**
+   * Génère des templates de fallback pour plusieurs actualités
+   */
+  generateMultipleFallbackTemplates(selectedNews, templatesPerNews = 3) {
+    const allTemplates = [];
+
+    selectedNews.forEach(newsItem => {
+      const templates = this.generateFallbackTemplatesForNews(newsItem, templatesPerNews);
+      allTemplates.push(...templates);
+    });
+
+    return allTemplates;
+  }
+
+  /**
+   * Génère des templates basés sur des sujets personnalisés
+   * @param {Array} subjects - Liste des sujets à utiliser
+   * @param {Array} targets - Cibles de la campagne
+   * @param {Object} options - Options de génération
+   * @returns {Promise<Array>} - Templates générés
+   */
+  async generateTemplatesFromSubjects(subjects, targets = [], options = {}) {
+    try {
+      const {
+        templatesPerSubject = 2,
+        maxTotalTemplates = 10,
+        sophisticationLevels = ['medium', 'high'],
+        templateTypes = ['security_alert', 'system_notification']
+      } = options;
+
+      console.log(`🎯 Génération de templates pour ${subjects.length} sujets personnalisés...`);
+
+      // Convertir les sujets en format d'actualités
+      const newsItems = subjects.map((subject, index) => ({
+        title: subject.title || `Sujet ${index + 1}`,
+        description: subject.description || subject.content || 'Sujet personnalisé',
+        source: 'Personnalisé',
+        excerpt: subject.excerpt || subject.description || subject.content
+      }));
+
+      // Utiliser la méthode existante avec les sujets convertis
+      return await this.generatePhishingTemplates(newsItems, targets, {
+        templatesPerNews: templatesPerSubject,
+        maxTotalTemplates,
+        sophisticationLevels,
+        templateTypes
       });
 
-      const response = chatCompletion.choices[0]?.message?.content;
-      
-      if (!response) {
-        console.warn('⚠️ Aucune réponse de Groq, utilisation des templates de fallback');
-        return this.generateFallbackTemplates(selectedNews);
-      }
-
-      console.log('📝 Réponse Groq reçue, tentative de parsing...');
-
-      // Parser la réponse JSON avec gestion d'erreurs robuste
-      let parsedResponse;
-      try {
-        parsedResponse = this.extractAndParseJSON(response);
-      } catch (parseError) {
-        console.error('❌ Erreur de parsing, utilisation des templates de fallback');
-        console.error('Réponse brute:', response.substring(0, 500) + '...');
-        return this.generateFallbackTemplates(selectedNews);
-      }
-
-      // Validation de la structure
-      if (!parsedResponse.templates || !Array.isArray(parsedResponse.templates)) {
-        console.warn('⚠️ Structure invalide, utilisation des templates de fallback');
-        return this.generateFallbackTemplates(selectedNews);
-      }
-
-      // Valider et nettoyer chaque template
-      const validTemplates = parsedResponse.templates
-        .filter(template => template.subject && template.content_html)
-        .map((template, index) => ({
-          id: template.id || `groq_template_${Date.now()}_${index}`,
-          name: template.name || `Template ${index + 1}`,
-          type: template.type || 'generic',
-          sophistication_level: template.sophistication_level || 'medium',
-          subject: template.subject,
-          content_html: template.content_html,
-          content_text: template.content_text || this.extractTextFromHTML(template.content_html),
-          personalization_fields: template.personalization_fields || ["firstName", "lastName", "position"],
-          based_on_news: template.based_on_news || selectedNews[0]?.title || 'Actualité sélectionnée',
-          preview: template.preview || template.subject,
-          created_at: new Date()
-        }));
-
-      if (validTemplates.length === 0) {
-        console.warn('⚠️ Aucun template valide généré, utilisation des templates de fallback');
-        return this.generateFallbackTemplates(selectedNews);
-      }
-
-      console.log(`✅ ${validTemplates.length} templates générés avec succès via Groq`);
-      return validTemplates;
-
     } catch (error) {
-      console.error('❌ Erreur GroqService:', error.message);
-      console.log('🔄 Fallback: génération de templates par défaut');
-      return this.generateFallbackTemplates(selectedNews || []);
+      console.error('❌ Erreur generateTemplatesFromSubjects:', error.message);
+      
+      // Fallback pour sujets personnalisés
+      const fallbackTemplates = [];
+      subjects.forEach(subject => {
+        const newsItem = {
+          title: subject.title || 'Sujet personnalisé',
+          description: subject.description || subject.content || 'Contenu personnalisé'
+        };
+        const templates = this.generateFallbackTemplatesForNews(newsItem, 2);
+        fallbackTemplates.push(...templates);
+      });
+
+      return fallbackTemplates;
     }
   }
 
@@ -494,6 +555,43 @@ Réponds UNIQUEMENT avec du JSON valide:
       console.error('Test de connexion Groq échoué:', error.message);
       return false;
     }
+  }
+
+  /**
+   * Obtient des statistiques sur la génération de templates
+   * @param {Array} templates - Templates générés
+   * @returns {Object} - Statistiques
+   */
+  getTemplateStats(templates) {
+    const stats = {
+      total: templates.length,
+      byType: {},
+      bySophistication: {},
+      byNews: {},
+      createdToday: 0
+    };
+
+    const today = new Date().toDateString();
+
+    templates.forEach(template => {
+      // Par type
+      stats.byType[template.type] = (stats.byType[template.type] || 0) + 1;
+      
+      // Par sophistication
+      stats.bySophistication[template.sophistication_level] = 
+        (stats.bySophistication[template.sophistication_level] || 0) + 1;
+      
+      // Par actualité
+      stats.byNews[template.based_on_news] = 
+        (stats.byNews[template.based_on_news] || 0) + 1;
+      
+      // Créés aujourd'hui
+      if (template.created_at && new Date(template.created_at).toDateString() === today) {
+        stats.createdToday++;
+      }
+    });
+
+    return stats;
   }
 }
 

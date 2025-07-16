@@ -1,5 +1,4 @@
-// src/routes/landingpage.js
-const express = require('express');
+const express = require('express'); 
 const { body, param } = require('express-validator');
 const LandingPageController = require('../controllers/LandingPageController');
 const router = express.Router();
@@ -48,25 +47,19 @@ const validateCloneUrl = [
     }),
 ];
 
-// Middleware de validation pour la sélection de template
+// Middleware de validation pour la sélection de template - VERSION CORRIGÉE
 const validateTemplateSelection = [
-  body('template')
-    .isObject()
-    .withMessage('Template invalide'),
-  body('template.id')
-    .isInt({ min: 1 })
-    .withMessage('ID de template invalide'),
-  body('template.name')
-    .trim()
-    .notEmpty()
-    .withMessage('Nom du template requis'),
-  body('template.url')
-    .isURL()
-    .withMessage('URL du template invalide'),
-  body('template.category')
-    .trim()
-    .notEmpty()
-    .withMessage('Catégorie du template requise')
+  body('templateId') // S'attend à recevoir templateId
+    .exists()
+    .withMessage('ID de template manquant')
+    .custom((value) => {
+      // Accepter les nombres et les chaînes
+      if (typeof value === 'number' || typeof value === 'string') {
+        return true;
+      }
+      throw new Error('ID de template invalide');
+    })
+  .withMessage('ID de template invalide'),
 ];
 
 // Middleware de validation pour les actions post-soumission
@@ -130,7 +123,7 @@ router.post('/:campaignId/clone',
  * @access  Private
  */
 router.post('/:campaignId/template',
-  [...validateCampaignId, ...validateTemplateSelection],
+  [...validateCampaignId, ...validateTemplateSelection], // Utilise la validation simplifiée
   LandingPageController.selectTemplate
 );
 

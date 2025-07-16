@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M4,8A1,1,0,0,0,3,9v6a1,1,0,0,0,1,1H8.25L15,21V3L8.25,8H4Zm9-1.15V17.15L8.7,14H5V10H8.7ZM20,12a6,6,0,0,1-1.76,4.24L17,15a4.24,4.24,0,0,0,0-6l1.24-1.24A6,6,0,0,1,20,12Z" class="large-icon" style="fill: white" id="volume-med-icon-large"/>
+</svg>

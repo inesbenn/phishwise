@@ -1,0 +1,100 @@
+/* Fonts */
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLight.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLight.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLight.ttf') format("truetype");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLightItalic.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLightItalic.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-UltraLightItalic.ttf') format("truetype");
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Regular.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Regular.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Regular.ttf') format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Medium.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Medium.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Medium.ttf') format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-MediumItalic.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-MediumItalic.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-MediumItalic.ttf') format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.ttf') format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.ttf') format("truetype");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBold.ttf') format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-DemiBoldItalic.ttf') format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Bold.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Bold.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-Bold.ttf') format("truetype");
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  src: url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-BoldItalic.woff2') format("woff2"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-BoldItalic.woff') format("woff"),
+       url('https://snapnet-cdn.storage.googleapis.com/fonts/avenir-next/AvenirNext-BoldItalic.ttf') format("truetype");
+  font-weight: 800;
+  font-style: italic;
+}
