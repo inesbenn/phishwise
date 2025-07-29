@@ -56,6 +56,7 @@ const authMiddleware = require('./middleware/authMiddleware');
 const modelMailRoutes = require('./routes/ModelMail');
 const landingpageRoutes = require('./routes/landingpage');
 const dnsRoutes = require('./routes/dns');
+const emailRoutes = require('./routes/emailRoutes'); // ✅ Ajout de l'import des routes email
 // Import du contrôleur d'interaction et du service de tracking pour la route de page clonée
 const InteractionController = require('./controllers/DNSController');
 const TrackingService = require('./services/TrackingService'); // Pour l'injection du script
@@ -82,6 +83,7 @@ app.use('/api/campaigns', campaignRoutes);
 // Les routes de cible peuvent être imbriquées dans campaigns ou séparées si elles sont très indépendantes.
 // Si targetRoutes contient des routes comme /api/campaigns/:campaignId/targets, c'est bon.
 app.use('/api/campaigns', targetRoutes);
+app.use('/api/campaigns', emailRoutes); // ✅ Ajout des routes email
 
 // Autres routes API
 app.use('/api', modelMailRoutes);

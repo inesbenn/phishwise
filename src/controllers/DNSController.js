@@ -2,13 +2,14 @@
 const { validationResult } = require('express-validator');
 const dnsValidationService = require('../services/dnsValidationService');
 const Campaign = require('../models/Campaign');
+const mongoose = require('mongoose');
 
 class DNSController {
   /**
    * Valider le DNS d'un domaine avec suggestions de correction
    * POST /api/dns/validate
    */
-  async validateDomain(req, res) {
+  validateDomain = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -18,13 +19,22 @@ class DNSController {
       });
     }
 
-    const { domain, campaignId } = req.body;
+    const { domain, campaignId, fromEmail, fromName } = req.body;
 
     try {
       console.log(`🔍 Validation DNS pour domaine: ${domain}`);
 
-      // Effectuer la validation avec suggestions de correction
-      const validationResults = await dnsValidationService.validateDomainWithCorrections(domain, campaignId);
+      // Préparer les données SMTP si fournies
+      const smtpData = {};
+      if (fromEmail) smtpData.fromEmail = fromEmail;
+      if (fromName) smtpData.fromName = fromName;
+
+      // Effectuer la validation avec suggestions de correction et sauvegarde SMTP
+      const validationResults = await dnsValidationService.validateDomainWithCorrections(
+        domain, 
+        campaignId,
+        Object.keys(smtpData).length > 0 ? smtpData : null
+      );
 
       // Calculer le score de santé DNS
       const healthScore = this.calculateDNSHealthScore(validationResults);
@@ -38,6 +48,7 @@ class DNSController {
           domain,
           validationResults,
           healthScore,
+          smtpData: Object.keys(smtpData).length > 0 ? smtpData : null,
           timestamp: new Date()
         }
       });
@@ -53,10 +64,70 @@ class DNSController {
   }
 
   /**
+   * Configurer le DNS et SMTP pour une campagne (Step 5)
+   * POST /api/dns/campaign/:campaignId/configure
+   */
+  configureCampaignDNS = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: errors.array()
+      });
+    }
+
+    const { campaignId } = req.params;
+    const { domain, fromEmail, fromName } = req.body;
+
+    try {
+      console.log(`🔧 Configuration DNS/SMTP pour campagne: ${campaignId}`);
+
+      // Préparer les données SMTP
+      const smtpData = {};
+      if (fromEmail) smtpData.fromEmail = fromEmail;
+      if (fromName) smtpData.fromName = fromName;
+
+      // Effectuer la validation et sauvegarde
+      const validationResults = await dnsValidationService.validateDomainWithCorrections(
+        domain, 
+        campaignId,
+        smtpData
+      );
+
+      const healthScore = this.calculateDNSHealthScore(validationResults);
+
+      console.log(`✅ Configuration DNS/SMTP terminée pour campagne ${campaignId} - Score: ${healthScore}%`);
+
+      res.json({
+        success: true,
+        message: 'Configuration DNS et SMTP initiée pour la campagne',
+        data: {
+          campaignId,
+          domain,
+          validationResults,
+          healthScore,
+          smtpData,
+          isConfigured: validationResults.validationComplete,
+          timestamp: new Date()
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur configuration DNS/SMTP campagne:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la configuration DNS/SMTP',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
    * Appliquer les corrections automatiques DNS
    * POST /api/dns/apply-corrections
    */
-  async applyCorrections(req, res) {
+  applyCorrections = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -110,7 +181,7 @@ class DNSController {
    * Obtenir le statut DNS d'une campagne
    * GET /api/dns/campaign/:campaignId/status
    */
-  async getCampaignDNSStatus(req, res) {
+  getCampaignDNSStatus = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -123,40 +194,62 @@ class DNSController {
     const { campaignId } = req.params;
 
     try {
-      console.log(`📋 Récupération du statut DNS pour campagne: ${campaignId}`);
+      console.log(`📋 Récupération du statut DNS/SMTP pour campagne: ${campaignId}`);
 
-      const campaign = await Campaign.findById(campaignId);
-      if (!campaign) {
-        return res.status(404).json({
+      // Vérifier si l'ID est un ObjectId valide
+      if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+        console.error(`❌ ID de campagne invalide: ${campaignId}`);
+        return res.status(400).json({
           success: false,
-          message: 'Campagne non trouvée'
+          message: 'Format d\'ID de campagne invalide'
         });
       }
 
-      const dnsStatus = {
-        domain: campaign.step5.domain,
-        validationComplete: campaign.step5.validationComplete,
-        isConfigured: campaign.step5.isConfigured,
-        configuredAt: campaign.step5.configuredAt,
-        lastValidation: campaign.step5.dnsValidation,
-        healthScore: campaign.step5.dnsValidation ? 
-          this.calculateDNSHealthScore(campaign.step5.dnsValidation) : 0
-      };
+      // Utiliser le service pour récupérer les données
+      const smtpData = await dnsValidationService.getCampaignSMTPData(campaignId);
 
-      console.log(`✅ Statut DNS récupéré pour campagne ${campaignId}`);
+      const healthScore = smtpData.dnsValidation ? 
+        this.calculateDNSHealthScore(smtpData.dnsValidation) : 0;
+
+      console.log(`✅ Statut DNS/SMTP récupéré pour campagne ${campaignId}:`, {
+        fromEmail: smtpData.fromEmail,
+        fromName: smtpData.fromName,
+        domain: smtpData.domain,
+        validationComplete: smtpData.validationComplete,
+        isConfigured: smtpData.isConfigured,
+        healthScore: healthScore
+      });
 
       res.json({
         success: true,
-        message: 'Statut DNS récupéré',
-        data: dnsStatus
+        message: 'Statut DNS/SMTP récupéré',
+        data: {
+          ...smtpData,
+          healthScore,
+          dnsValidation: smtpData.dnsValidation // Inclure les détails de validation
+        }
       });
 
     } catch (error) {
-      console.error('❌ Erreur récupération statut DNS:', error);
+      console.error('❌ Erreur récupération statut DNS/SMTP:', error);
+      console.error('Stack trace:', error.stack);
+      
+      // Gestion spécifique des erreurs Mongoose
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Format d\'ID de campagne invalide'
+        });
+      }
+
       res.status(500).json({
         success: false,
-        message: 'Erreur lors de la récupération du statut DNS',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        message: 'Erreur lors de la récupération du statut DNS/SMTP',
+        error: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : undefined
       });
     }
   }
@@ -165,7 +258,7 @@ class DNSController {
    * Revalider le DNS d'une campagne
    * POST /api/dns/campaign/:campaignId/revalidate
    */
-  async revalidateCampaignDNS(req, res) {
+  revalidateCampaignDNS = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -180,24 +273,36 @@ class DNSController {
     try {
       console.log(`🔄 Revalidation DNS pour campagne: ${campaignId}`);
 
-      const campaign = await Campaign.findById(campaignId);
-      if (!campaign) {
-        return res.status(404).json({
+      // Vérifier si l'ID est un ObjectId valide
+      if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+        return res.status(400).json({
           success: false,
-          message: 'Campagne non trouvée'
+          message: 'Format d\'ID de campagne invalide'
         });
       }
 
-      const domain = campaign.step5.domain;
-      if (!domain) {
+      // Récupérer les données actuelles de la campagne
+      const currentData = await dnsValidationService.getCampaignSMTPData(campaignId);
+
+      if (!currentData.domain) {
         return res.status(400).json({
           success: false,
           message: 'Aucun domaine configuré pour cette campagne'
         });
       }
 
+      // Préparer les données SMTP pour la revalidation
+      const smtpData = {};
+      if (currentData.fromEmail) smtpData.fromEmail = currentData.fromEmail;
+      if (currentData.fromName) smtpData.fromName = currentData.fromName;
+
       // Effectuer la revalidation
-      const validationResults = await dnsValidationService.validateDomainWithCorrections(domain, campaignId);
+      const validationResults = await dnsValidationService.validateDomainWithCorrections(
+        currentData.domain, 
+        campaignId,
+        Object.keys(smtpData).length > 0 ? smtpData : null
+      );
+
       const healthScore = this.calculateDNSHealthScore(validationResults);
 
       console.log(`✅ Revalidation DNS terminée pour campagne ${campaignId} - Score: ${healthScore}%`);
@@ -206,9 +311,10 @@ class DNSController {
         success: true,
         message: 'Revalidation DNS terminée',
         data: {
-          domain,
+          domain: currentData.domain,
           validationResults,
           healthScore,
+          smtpData,
           timestamp: new Date()
         }
       });
@@ -227,7 +333,7 @@ class DNSController {
    * Obtenir les recommandations DNS pour un domaine
    * GET /api/dns/recommendations/:domain
    */
-  async getDNSRecommendations(req, res) {
+  getDNSRecommendations = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -248,28 +354,28 @@ class DNSController {
       // Extraire les recommandations
       const recommendations = {
         spf: {
-          current: validationResults.spf.record,
-          suggested: validationResults.spf.suggestedRecord,
-          steps: validationResults.spf.correctionSteps,
-          command: validationResults.spf.correctionCommand,
-          canAutoCorrect: validationResults.spf.canAutoCorrect,
-          issues: validationResults.spf.issues || []
+          current: validationResults.spf?.record || null,
+          suggested: validationResults.spf?.suggestedRecord || null,
+          steps: validationResults.spf?.correctionSteps || [],
+          command: validationResults.spf?.correctionCommand || null,
+          canAutoCorrect: validationResults.spf?.canAutoCorrect || false,
+          issues: validationResults.spf?.issues || []
         },
         dkim: {
-          current: validationResults.dkim.record,
-          suggested: validationResults.dkim.suggestedRecord,
-          steps: validationResults.dkim.correctionSteps,
-          command: validationResults.dkim.correctionCommand,
-          canAutoCorrect: validationResults.dkim.canAutoCorrect,
-          issues: validationResults.dkim.issues || []
+          current: validationResults.dkim?.record || null,
+          suggested: validationResults.dkim?.suggestedRecord || null,
+          steps: validationResults.dkim?.correctionSteps || [],
+          command: validationResults.dkim?.correctionCommand || null,
+          canAutoCorrect: validationResults.dkim?.canAutoCorrect || false,
+          issues: validationResults.dkim?.issues || []
         },
         dmarc: {
-          current: validationResults.dmarc.record,
-          suggested: validationResults.dmarc.suggestedRecord,
-          steps: validationResults.dmarc.correctionSteps,
-          command: validationResults.dmarc.correctionCommand,
-          canAutoCorrect: validationResults.dmarc.canAutoCorrect,
-          issues: validationResults.dmarc.issues || []
+          current: validationResults.dmarc?.record || null,
+          suggested: validationResults.dmarc?.suggestedRecord || null,
+          steps: validationResults.dmarc?.correctionSteps || [],
+          command: validationResults.dmarc?.correctionCommand || null,
+          canAutoCorrect: validationResults.dmarc?.canAutoCorrect || false,
+          issues: validationResults.dmarc?.issues || []
         }
       };
 
@@ -299,7 +405,7 @@ class DNSController {
    * Tester la propagation DNS
    * POST /api/dns/test-propagation
    */
-  async testDNSPropagation(req, res) {
+  testDNSPropagation = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -328,10 +434,10 @@ class DNSController {
         propagationResults.push({
           testNumber: i + 1,
           timestamp: new Date(),
-          spfStatus: validation.spf.status,
-          dkimStatus: validation.dkim.status,
-          dmarcStatus: validation.dmarc.status,
-          validationComplete: validation.validationComplete
+          spfStatus: validation.spf?.status || 'unknown',
+          dkimStatus: validation.dkim?.status || 'unknown',
+          dmarcStatus: validation.dmarc?.status || 'unknown',
+          validationComplete: validation.validationComplete || false
         });
 
         console.log(`   Test ${i + 1}/${testCount} - Status: ${validation.validationComplete ? 'OK' : 'KO'}`);
@@ -370,30 +476,32 @@ class DNSController {
    * Calculer le score de santé DNS (0-100)
    */
   calculateDNSHealthScore(validationResults) {
+    if (!validationResults) return 0;
+
     let score = 0;
     let totalChecks = 0;
 
     // SPF (33% du score)
     totalChecks += 1;
-    if (validationResults.spf.status === 'success') {
+    if (validationResults.spf?.status === 'success') {
       score += 33;
-    } else if (validationResults.spf.status === 'warning') {
+    } else if (validationResults.spf?.status === 'warning') {
       score += 16;
     }
 
     // DKIM (33% du score)
     totalChecks += 1;
-    if (validationResults.dkim.status === 'success') {
+    if (validationResults.dkim?.status === 'success') {
       score += 33;
-    } else if (validationResults.dkim.status === 'warning') {
+    } else if (validationResults.dkim?.status === 'warning') {
       score += 16;
     }
 
     // DMARC (34% du score)
     totalChecks += 1;
-    if (validationResults.dmarc.status === 'success') {
+    if (validationResults.dmarc?.status === 'success') {
       score += 34;
-    } else if (validationResults.dmarc.status === 'warning') {
+    } else if (validationResults.dmarc?.status === 'warning') {
       score += 17;
     }
 

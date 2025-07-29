@@ -4,9 +4,9 @@ const Campaign = require('../models/Campaign');
 
 class DNSValidationService {
   /**
-   * Valider un domaine avec suggestions de corrections
+   * Valider un domaine avec suggestions de corrections et sauvegarde des champs SMTP
    */
-  async validateDomainWithCorrections(domain, campaignId = null) {
+  async validateDomainWithCorrections(domain, campaignId = null, smtpData = null) {
     try {
       console.log(`🔍 Validation DNS pour domaine: ${domain}`);
 
@@ -28,7 +28,7 @@ class DNSValidationService {
 
       // Sauvegarder les résultats dans la campagne si l'ID est fourni
       if (campaignId) {
-        await this.saveDNSValidationToCampaign(campaignId, validationResults);
+        await this.saveDNSValidationToCampaign(campaignId, validationResults, smtpData);
       }
 
       return validationResults;
@@ -281,14 +281,33 @@ class DNSValidationService {
   }
 
   /**
-   * Sauvegarder les résultats de validation dans la campagne
+   * Sauvegarder les résultats de validation et les données SMTP dans la campagne
    */
-  async saveDNSValidationToCampaign(campaignId, validationResults) {
+  async saveDNSValidationToCampaign(campaignId, validationResults, smtpData = null) {
     try {
       const campaign = await Campaign.findById(campaignId);
       if (!campaign) {
         throw new Error('Campagne non trouvée');
       }
+
+      // Initialiser step5 si nécessaire
+      if (!campaign.step5) {
+        campaign.step5 = {};
+      }
+
+      // Sauvegarder les données SMTP si fournies
+      if (smtpData) {
+        if (smtpData.fromEmail) {
+          campaign.step5.fromEmail = smtpData.fromEmail;
+        }
+        if (smtpData.fromName) {
+          campaign.step5.fromName = smtpData.fromName;
+        }
+        console.log(`✅ Données SMTP sauvegardées: ${smtpData.fromEmail} (${smtpData.fromName})`);
+      }
+
+      // Sauvegarder le domaine
+      campaign.step5.domain = validationResults.domain;
 
       // Mettre à jour les résultats DNS
       campaign.step5.dnsValidation = {
@@ -320,10 +339,36 @@ class DNSValidationService {
       }
 
       await campaign.save();
-      console.log(`✅ Résultats DNS sauvegardés pour la campagne ${campaignId}`);
+      console.log(`✅ Résultats DNS et SMTP sauvegardés pour la campagne ${campaignId}`);
 
     } catch (error) {
-      console.error('❌ Erreur sauvegarde DNS:', error);
+      console.error('❌ Erreur sauvegarde DNS/SMTP:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les données SMTP d'une campagne
+   */
+  async getCampaignSMTPData(campaignId) {
+    try {
+      const campaign = await Campaign.findById(campaignId);
+      if (!campaign) {
+        throw new Error('Campagne non trouvée');
+      }
+
+      return {
+        fromEmail: campaign.step5?.fromEmail || '',
+        fromName: campaign.step5?.fromName || '',
+        domain: campaign.step5?.domain || '',
+        dnsValidation: campaign.step5?.dnsValidation || null,
+        validationComplete: campaign.step5?.validationComplete || false,
+        isConfigured: campaign.step5?.isConfigured || false,
+        configuredAt: campaign.step5?.configuredAt || null
+      };
+
+    } catch (error) {
+      console.error('❌ Erreur récupération données SMTP:', error);
       throw error;
     }
   }

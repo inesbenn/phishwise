@@ -39,18 +39,31 @@ const validateCampaignIdParam = [
     .withMessage('ID de campagne invalide')
 ];
 
+// NOUVELLE: Validation pour les données SMTP
+const validateSMTPData = [
+  body('fromEmail')
+    .optional()
+    .isEmail()
+    .withMessage('Format d\'email invalide'),
+  body('fromName')
+    .optional()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Le nom d\'affichage doit contenir entre 2 et 100 caractères')
+];
+
 // ===========================================
 // ROUTES PRINCIPALES DE VALIDATION DNS
 // ===========================================
 
 /**
- * Valider le DNS d'un domaine avec suggestions de correction
+ * Valider le DNS d'un domaine avec suggestions de correction et sauvegarde SMTP
  * POST /api/dns/validate
- * Body: { domain: string, campaignId?: string }
+ * Body: { domain: string, campaignId?: string, fromEmail?: string, fromName?: string }
  */
 router.post('/validate',
   validateDomain,
   validateCampaignId,
+  validateSMTPData,
   dnsController.validateDomain
 );
 
@@ -89,7 +102,7 @@ router.post('/test-propagation',
 // ===========================================
 
 /**
- * Obtenir le statut DNS d'une campagne
+ * Obtenir le statut DNS/SMTP d'une campagne
  * GET /api/dns/campaign/:campaignId/status
  */
 router.get('/campaign/:campaignId/status',
@@ -107,42 +120,15 @@ router.post('/campaign/:campaignId/revalidate',
 );
 
 /**
- * Configurer le DNS pour une campagne (Step 5)
+ * Configurer le DNS et SMTP pour une campagne (Step 5)
  * POST /api/dns/campaign/:campaignId/configure
- * Body: { domain: string }
+ * Body: { domain: string, fromEmail?: string, fromName?: string }
  */
 router.post('/campaign/:campaignId/configure',
   validateCampaignIdParam,
   validateDomain,
-  async (req, res) => {
-    const { campaignId } = req.params;
-    const { domain } = req.body;
-
-    try {
-      // Valider le domaine et mettre à jour la campagne
-      const validationResults = await require('../services/dnsValidationService')
-        .validateDomainWithCorrections(domain, campaignId);
-
-      res.json({
-        success: true,
-        message: 'Configuration DNS initiée pour la campagne',
-        data: {
-          campaignId,
-          domain,
-          validationResults,
-          isConfigured: validationResults.validationComplete
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Erreur configuration DNS campagne:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de la configuration DNS',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-  }
+  validateSMTPData,
+  dnsController.configureCampaignDNS
 );
 
 // ===========================================
@@ -287,7 +273,9 @@ router.get('/campaign/:campaignId/history',
           spfStatus: campaign.step5.dnsValidation.spf.status,
           dkimStatus: campaign.step5.dnsValidation.dkim.status,
           dmarcStatus: campaign.step5.dnsValidation.dmarc.status,
-          validationComplete: campaign.step5.validationComplete
+          validationComplete: campaign.step5.validationComplete,
+          fromEmail: campaign.step5.fromEmail,
+          fromName: campaign.step5.fromName
         });
       }
 
@@ -321,12 +309,14 @@ router.get('/summary',
     try {
       const Campaign = require('../models/Campaign');
       const campaigns = await Campaign.find({ 'step5.domain': { $exists: true, $ne: '' } })
-        .select('name step5.domain step5.validationComplete step5.dnsValidation step5.configuredAt');
+        .select('name step5.domain step5.fromEmail step5.fromName step5.validationComplete step5.dnsValidation step5.configuredAt');
 
       const summary = campaigns.map(campaign => ({
         campaignId: campaign._id,
         campaignName: campaign.name,
         domain: campaign.step5.domain,
+        fromEmail: campaign.step5.fromEmail,
+        fromName: campaign.step5.fromName,
         validationComplete: campaign.step5.validationComplete,
         configuredAt: campaign.step5.configuredAt,
         healthScore: campaign.step5.dnsValidation ? 
