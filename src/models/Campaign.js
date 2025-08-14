@@ -222,6 +222,33 @@ const campaignSchema = new Schema({
         configuredAt: { type: Date }
     },
 
+step6: {
+        // Formations assignées à cette campagne
+        assignedFormations: [{
+            formationId: {
+                type: Schema.Types.ObjectId,
+                ref: 'Formation',
+                required: true
+            },
+            assignedAt: { type: Date, default: Date.now },
+            mandatory: { type: Boolean, default: true },
+            dueDate: { type: Date }, // Date limite pour compléter
+            order: { type: Number, default: 0 } // Ordre de présentation
+        }],
+        
+        // Configuration de redirection après phishing
+        redirectToLearning: { type: Boolean, default: true },
+        learningPageUrl: { type: String }, // URL personnalisée de la page d'apprentissage
+        
+        // Paramètres d'accès
+        requireAuthentication: { type: Boolean, default: false },
+        accessToken: { type: String }, // Token pour accès direct
+        sessionDuration: { type: Number, default: 3600 }, // Durée de session en secondes
+        
+        isConfigured: { type: Boolean, default: false },
+        configuredAt: { type: Date }
+    },
+
     status: {
         type: String,
         enum: ['draft', 'running', 'completed'],

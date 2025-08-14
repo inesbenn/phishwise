@@ -162,9 +162,10 @@ class EmailController {
      * @returns {Object} Données de l'email formatées
      */
     buildEmailData(campaign, template, target) {
-        // Construction de l'adresse expéditeur
-        const fromAddress = `${campaign.step5.fromName} <${campaign.step5.fromEmail}>`;
-
+        // MODIFICATION PRINCIPALE : Séparation de l'adresse d'affichage et d'envoi
+        // L'adresse qui s'affiche dans le client email (celle saisie par l'utilisateur)
+        const displayFromAddress = `${campaign.step5.fromName} <${campaign.step5.fromEmail}>`;
+        
         // Personnalisation du contenu HTML
         const personalizedHtml = this.personalizeEmailContent(
             template.content_html,
@@ -176,11 +177,16 @@ class EmailController {
         const personalizedSubject = this.personalizeText(template.subject, target);
 
         return {
-            from: fromAddress,
+            from: displayFromAddress,  // Adresse qui s'affiche
             to: target.email,
             subject: personalizedSubject,
             html: personalizedHtml,
-            text: template.content_text || null
+            text: template.content_text || null,
+            // Ajout des en-têtes personnalisés pour masquer l'adresse réelle
+            headers: {
+                'Reply-To': campaign.step5.fromEmail, // Optionnel : où les réponses sont envoyées
+                'Return-Path': campaign.step5.fromEmail, // Optionnel : où les bounces sont envoyés
+            }
         };
     }
 

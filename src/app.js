@@ -56,8 +56,10 @@ const authMiddleware = require('./middleware/authMiddleware');
 const modelMailRoutes = require('./routes/ModelMail');
 const landingpageRoutes = require('./routes/landingpage');
 const dnsRoutes = require('./routes/dns');
-const emailRoutes = require('./routes/emailRoutes'); // ✅ Ajout de l'import des routes email
+const emailRoutes = require('./routes/emailRoutes'); 
+const dashboardRoutes = require('./routes/dashboard');// ✅ Ajout de l'import des routes email
 // Import du contrôleur d'interaction et du service de tracking pour la route de page clonée
+const learningRoutes = require('./routes/learningRoutes');
 const InteractionController = require('./controllers/DNSController');
 const TrackingService = require('./services/TrackingService'); // Pour l'injection du script
 const Campaign = require('./models/Campaign'); // Pour récupérer les infos de campagne
@@ -89,9 +91,12 @@ app.use('/api/campaigns', emailRoutes); // ✅ Ajout des routes email
 app.use('/api', modelMailRoutes);
 app.use('/api/landingpage', landingpageRoutes);
 
+app.use('/api/learning', learningRoutes);
+
 // --- Routes d'Interaction (Tracking) ---
 // Ces routes sont généralement publiques car elles sont appelées depuis les pages clonées.
 app.use('/api/dns', dnsRoutes);
+app.use('/api/dashboard', dashboardRoutes); 
 // ----------------------------------------
 
 
