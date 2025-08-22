@@ -57,6 +57,57 @@ router.put(
   campaignController.updateStep0 // Appelle la fonction du contrôleur de campagne
 );
 
-// NOTE: Toutes les routes de cibles (Step 1, getTargets, updateTarget, deleteTarget) ont été déplacées vers src/routes/targets.js
+/**
+ * GET /api/campaigns/:id/complete
+ * Récupère toutes les données de la campagne pour la validation finale
+ */
+router.get(
+  '/:id/complete',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide')
+  ],
+  campaignController.getCampaignCompleteData
+);
+
+/**
+ * POST /api/campaigns/:id/launch
+ * Lance la campagne après validation
+ */
+router.post(
+  '/:id/launch',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide'),
+    body('scheduledDate').optional().isISO8601().withMessage('Date de programmation invalide').toDate()
+  ],
+  campaignController.launchCampaign
+);
+
+/**
+ * PUT /api/campaigns/:id/draft
+ * Sauvegarde la campagne en brouillon
+ */
+router.put(
+  '/:id/draft',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide')
+  ],
+  campaignController.saveCampaignAsDraft
+);
+
+/**
+ * GET /api/campaigns/:id/validation-status
+ * Récupère le statut de validation de la campagne
+ */
+router.get(
+  '/:id/validation-status',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide')
+  ],
+  campaignController.getCampaignValidationStatus
+);
 
 module.exports = router;

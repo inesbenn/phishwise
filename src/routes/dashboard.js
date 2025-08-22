@@ -5,6 +5,9 @@ const fakeAuthMiddleware = require('../middleware/fakeAuthMiddleware');
 
 const router = express.Router();
 
+// Debug: Verify that all controller methods exist
+console.log('Dashboard controller methods:', Object.keys(dashboardController));
+
 /**
  * GET /api/dashboard/stats
  * Récupère les statistiques générales du dashboard

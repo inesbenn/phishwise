@@ -17,16 +17,16 @@ const submissionSchema = new Schema({
     ipAddress: { type: String },
     referrer: { type: String },
     url: { type: String },
-    formData: { type: Schema.Types.Mixed }, // Store all form data
-    targetEmail: { type: String }, // Email of the target who submitted
-    metadata: { type: Schema.Types.Mixed } // Additional metadata
+    formData: { type: Schema.Types.Mixed },
+    targetEmail: { type: String },
+    metadata: { type: Schema.Types.Mixed }
 });
 
-// Nouveau schéma pour les interactions générales (visites, clics)
+// Schéma pour les interactions générales (visites, clics)
 const interactionSchema = new Schema({
     type: {
         type: String,
-        enum: ['visit', 'click', 'download', 'error'], // Ajout de 'download' et 'error' pour plus de granularité si besoin
+        enum: ['visit', 'click', 'download', 'error'],
         required: true
     },
     timestamp: { type: Date, default: Date.now },
@@ -34,14 +34,79 @@ const interactionSchema = new Schema({
     userAgent: { type: String },
     pageUrl: { type: String },
     referrer: { type: String },
-    viewport: { // Pour les visites
+    viewport: {
         width: { type: Number },
         height: { type: Number }
     },
-    clickedUrl: { type: String }, // Pour les clics
-    linkText: { type: String },   // Pour les clics
-    downloadedFile: { type: String }, // Pour les téléchargements
-    errorMessage: { type: String } // Pour les erreurs de script client
+    clickedUrl: { type: String },
+    linkText: { type: String },
+    downloadedFile: { type: String },
+    errorMessage: { type: String }
+});
+
+// NOUVEAU: Schéma pour le tracking des emails
+const emailTrackingSchema = new Schema({
+    trackingToken: { 
+        type: String, 
+        required: true, 
+        unique: false, // Unique par campagne mais pas globalement
+        index: true 
+    },
+    targetEmail: { 
+        type: String, 
+        required: true 
+    },
+    sentAt: { 
+        type: Date, 
+        default: Date.now 
+    },
+    
+    // Tracking des ouvertures
+    opened: { 
+        type: Boolean, 
+        default: false 
+    },
+    openedAt: { 
+        type: Date 
+    },
+    openCount: { 
+        type: Number, 
+        default: 0 
+    },
+    openMetadata: {
+        ipAddress: { type: String },
+        userAgent: { type: String },
+        timestamp: { type: Date }
+    },
+    
+    // Tracking des clics
+    clicks: [{
+        url: { type: String, required: true },
+        clickedAt: { type: Date, default: Date.now },
+        metadata: {
+            ipAddress: { type: String },
+            userAgent: { type: String },
+            referer: { type: String }
+        }
+    }],
+    clickCount: { 
+        type: Number, 
+        default: 0 
+    },
+    
+    // Statut et métadonnées
+    bounced: { 
+        type: Boolean, 
+        default: false 
+    },
+    bounceReason: { 
+        type: String 
+    },
+    lastActivity: { 
+        type: Date 
+    }
+}, {
+    timestamps: true
 });
 
 const campaignSchema = new Schema({
@@ -68,7 +133,7 @@ const campaignSchema = new Schema({
             credibility: { type: Number, default: 0 }
         },
         news: [{
-            id: { type: Schema.Types.Mixed }, // String for 'news_<timestamp>_<index>'
+            id: { type: Schema.Types.Mixed },
             title: { type: String },
             description: { type: String },
             excerpt: { type: String },
@@ -107,7 +172,7 @@ const campaignSchema = new Schema({
             preview: { type: String },
             created_at: { type: Date, default: Date.now }
         }],
-        selectedTemplate: { type: String }, // ID du template sélectionné
+        selectedTemplate: { type: String },
         generatedAt: { type: Date }
     },
 
@@ -124,8 +189,8 @@ const campaignSchema = new Schema({
         filePath: { type: String },
         clonedAt: { type: Date },
         cloneId: { type: String },
-        previewUrl: { type: String }, // Ajouté pour correspondre au controller
-        resourcesCount: { type: Number }, // Ajouté pour correspondre au controller
+        previewUrl: { type: String },
+        resourcesCount: { type: Number },
         
         // Pour les templates
         selectedTemplate: {
@@ -142,15 +207,15 @@ const campaignSchema = new Schema({
             collectData: { type: Boolean, default: true },
             redirectToLearning: { type: Boolean, default: true },
             downloadMaliciousFile: { type: Boolean, default: true },
-            redirectUrl: { type: String }, // URL personnalisée de redirection
-            maliciousFileUrl: { type: String } // URL du fichier malveillant
+            redirectUrl: { type: String },
+            maliciousFileUrl: { type: String }
         },
         
         // Soumissions capturées
         submissions: { type: [submissionSchema], default: [] },
         
         // Interactions (visites, clics, etc.)
-        interactions: { type: [interactionSchema], default: [] }, // <--- NOUVEAU CHAMP AJOUTÉ ICI
+        interactions: { type: [interactionSchema], default: [] },
 
         // Statut
         status: { type: String, enum: ['pending', 'success', 'error'], default: 'pending' },
@@ -222,8 +287,13 @@ const campaignSchema = new Schema({
         configuredAt: { type: Date }
     },
 
-step6: {
-        // Formations assignées à cette campagne
+    step6: {
+        configurationType: {
+            type: String,
+            enum: ['existing', 'custom', 'mixed'],
+            default: 'existing'
+        },
+        
         assignedFormations: [{
             formationId: {
                 type: Schema.Types.ObjectId,
@@ -232,36 +302,121 @@ step6: {
             },
             assignedAt: { type: Date, default: Date.now },
             mandatory: { type: Boolean, default: true },
-            dueDate: { type: Date }, // Date limite pour compléter
-            order: { type: Number, default: 0 } // Ordre de présentation
+            dueDate: { type: Date },
+            order: { type: Number, default: 0 },
+            
+            source: {
+                type: String,
+                enum: ['library', 'wizard_created'],
+                default: 'library'
+            },
+            
+            wizardData: {
+                title: { type: String },
+                description: { type: String },
+                estimatedTime: { type: String },
+                modules: [{ type: Schema.Types.Mixed }]
+            }
         }],
         
-        // Configuration de redirection après phishing
-        redirectToLearning: { type: Boolean, default: true },
-        learningPageUrl: { type: String }, // URL personnalisée de la page d'apprentissage
+        learningPageConfig: {
+            title: { type: String, default: "Formation Sécurité - Sensibilisation au Phishing" },
+            description: { type: String, default: "Cette formation vous aidera à reconnaître et éviter les tentatives de phishing." },
+            estimatedTime: { type: String, default: "15-20 minutes" },
+            welcomeMessage: { type: String },
+            completionMessage: { type: String }
+        },
         
-        // Paramètres d'accès
+        redirectToLearning: { type: Boolean, default: true },
+        learningPageUrl: { type: String },
+      
         requireAuthentication: { type: Boolean, default: false },
-        accessToken: { type: String }, // Token pour accès direct
-        sessionDuration: { type: Number, default: 3600 }, // Durée de session en secondes
+        accessToken: { type: String },
+        sessionDuration: { type: Number, default: 3600 },
+        
+        allowRetry: { type: Boolean, default: true },
+        showProgress: { type: Boolean, default: true },
+        randomizeOrder: { type: Boolean, default: false },
+        
+        globalPassingCriteria: {
+            minimumScore: { type: Number, default: 70 },
+            requiredCompletionRate: { type: Number, default: 100 },
+            timeLimit: { type: Number }
+        },
+        
+        stats: {
+            totalFormations: { type: Number, default: 0 },
+            totalModules: { type: Number, default: 0 },
+            estimatedTotalTime: { type: String, default: "0 minutes" },
+            lastUpdated: { type: Date, default: Date.now }
+        },
         
         isConfigured: { type: Boolean, default: false },
         configuredAt: { type: Date }
     },
 
+    // NOUVEAU: Système de tracking des emails
+    emailTracking: {
+        type: [emailTrackingSchema],
+        default: []
+    },
+
+    // NOUVEAU: Statistiques d'emails en temps réel (cache)
+    emailStats: {
+        totalSent: { type: Number, default: 0 },
+        totalOpened: { type: Number, default: 0 },
+        totalClicks: { type: Number, default: 0 },
+        uniqueClicks: { type: Number, default: 0 },
+        openRate: { type: Number, default: 0 }, // En pourcentage
+        clickRate: { type: Number, default: 0 }, // En pourcentage  
+        clickThroughRate: { type: Number, default: 0 }, // En pourcentage (clics/ouvertures)
+        bounceCount: { type: Number, default: 0 },
+        bounceRate: { type: Number, default: 0 },
+        lastUpdated: { type: Date, default: Date.now }
+    },
+    
     status: {
         type: String,
         enum: ['draft', 'running', 'completed'],
         default: 'draft'
     }
 }, { 
-    timestamps: true // Ceci remplace les champs createdAt/updatedAt manuels
+    timestamps: true
 });
 
-// Middleware pour mettre à jour updatedAt (optionnel car timestamps: true le fait automatiquement)
+// Index pour optimiser les requêtes de tracking
+campaignSchema.index({ 'emailTracking.trackingToken': 1 });
+campaignSchema.index({ 'emailTracking.targetEmail': 1 });
+campaignSchema.index({ 'emailTracking.opened': 1 });
+
+// Middleware pour mettre à jour updatedAt
 campaignSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
     next();
 });
+
+// Méthode pour obtenir les statistiques rapides
+campaignSchema.methods.getQuickStats = function() {
+    const tracking = this.emailTracking || [];
+    
+    return {
+        sent: tracking.length,
+        opened: tracking.filter(t => t.opened).length,
+        clicked: tracking.filter(t => t.clickCount > 0).length,
+        totalClicks: tracking.reduce((sum, t) => sum + (t.clickCount || 0), 0)
+    };
+};
+
+// Méthode pour obtenir le taux d'ouverture
+campaignSchema.methods.getOpenRate = function() {
+    const stats = this.getQuickStats();
+    return stats.sent > 0 ? ((stats.opened / stats.sent) * 100).toFixed(1) : 0;
+};
+
+// Méthode pour obtenir le taux de clic
+campaignSchema.methods.getClickRate = function() {
+    const stats = this.getQuickStats();
+    return stats.sent > 0 ? ((stats.clicked / stats.sent) * 100).toFixed(1) : 0;
+};
 
 module.exports = model('Campaign', campaignSchema);

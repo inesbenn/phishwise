@@ -1,7 +1,11 @@
 // routes/emailRoutes.js
 const express = require('express');
 const router = express.Router();
-const { sendCampaignEmail, testEmailConfiguration } = require('../controllers/EmailController');
+const { 
+    sendCampaignEmail, 
+    testEmailConfiguration, 
+    getCampaignStats // Ajoutez l'importation de cette fonction
+} = require('../controllers/EmailController');
 
 /**
  * @route POST /api/campaigns/:campaignId/send-mail
@@ -17,5 +21,12 @@ router.post('/:campaignId/send-mail', sendCampaignEmail);
  * @access Private
  */
 router.get('/:campaignId/test-email', testEmailConfiguration);
+
+/**
+ * @route GET /api/campaigns/:campaignId/stats
+ * @desc Récupère les statistiques d'une campagne par son ID
+ * @access Private
+ */
+router.get('/:campaignId/stats', getCampaignStats); // Ajoutez cette ligne pour définir la route
 
 module.exports = router;

@@ -1,10 +1,11 @@
 // controllers/EmailController.js
 const Campaign = require('../models/Campaign');
 const EmailService = require('../services/EmailService');
+const EmailTrackingService = require('../services/EmailTrackingService');
 
 class EmailController {
     /**
-     * Envoie les emails de campagne
+     * Envoie les emails de campagne avec tracking intégré
      * POST /api/campaigns/:campaignId/send-mail
      * Body: { targetEmail?: string } (optionnel, pour envoyer à une cible spécifique)
      */
@@ -56,13 +57,18 @@ class EmailController {
                 }
             }
 
-            // 5. Construction et envoi des emails
+            // 5. Initialiser le système de tracking si nécessaire
+            if (!campaign.emailTracking) {
+                campaign.emailTracking = [];
+                await campaign.save();
+            }
+
+            // 6. Construction et envoi des emails avec tracking
             const emailPromises = targets.map(target => {
-                const emailData = this.buildEmailData(campaign, selectedTemplate, target);
-                return EmailService.sendMail(emailData);
+                return this.sendTrackedEmail(campaign, selectedTemplate, target, campaignId);
             });
 
-            // 6. Traitement des résultats
+            // 7. Traitement des résultats
             const results = await Promise.allSettled(emailPromises);
             const processedResults = results.map((result, index) => {
                 const target = targets[index];
@@ -88,14 +94,19 @@ class EmailController {
                 }
             });
 
-            // 7. Statistiques des résultats
+            // 8. Statistiques des résultats
             const successCount = processedResults.filter(r => r.success).length;
             const failureCount = processedResults.filter(r => !r.success).length;
 
-            // 8. Log de l'activité
+            // 9. Mettre à jour les statistiques initiales de la campagne
+            if (successCount > 0) {
+                await EmailTrackingService.updateCampaignStats(campaignId);
+            }
+
+            // 10. Log de l'activité
             console.log(`📧 Campagne ${campaignId}: ${successCount} envois réussis, ${failureCount} échecs`);
 
-            // 9. Réponse
+            // 11. Réponse
             return res.status(200).json({
                 success: true,
                 message: `Envoi terminé: ${successCount} réussis, ${failureCount} échecs`,
@@ -104,7 +115,11 @@ class EmailController {
                     successful: successCount,
                     failed: failureCount
                 },
-                results: processedResults
+                results: processedResults,
+                trackingInfo: {
+                    trackingEnabled: true,
+                    message: 'Les ouvertures et clics seront trackés automatiquement'
+                }
             });
 
         } catch (error) {
@@ -114,6 +129,69 @@ class EmailController {
                 message: 'Erreur interne du serveur',
                 error: error.message
             });
+        }
+    }
+
+    /**
+     * Envoie un email avec tracking intégré
+     * @param {Object} campaign - Campagne
+     * @param {Object} template - Template
+     * @param {Object} target - Cible
+     * @param {string} campaignId - ID de la campagne
+     * @returns {Promise<Object>} Résultat de l'envoi
+     */
+    async sendTrackedEmail(campaign, template, target, campaignId) {
+        try {
+            // 1. Générer les URLs de tracking
+            const trackingUrls = EmailTrackingService.generateTrackingUrls(campaignId, target.email);
+            
+            // 2. Construire les données de base de l'email
+            const baseEmailData = this.buildEmailData(campaign, template, target);
+            
+            // 3. Injecter le tracking dans le contenu HTML
+            let trackedHtml = baseEmailData.html;
+            
+            // Injecter le pixel de tracking d'ouverture
+            trackedHtml = EmailTrackingService.injectOpenTracking(
+                trackedHtml, 
+                trackingUrls.openTrackingUrl
+            );
+            
+            // Injecter le tracking des clics
+            trackedHtml = EmailTrackingService.injectClickTracking(
+                trackedHtml, 
+                trackingUrls.clickTrackingBaseUrl
+            );
+
+            // 4. Données de l'email final avec tracking
+            const trackedEmailData = {
+                ...baseEmailData,
+                html: trackedHtml
+            };
+
+            // 5. Stocker le token de tracking AVANT l'envoi
+            await EmailTrackingService.storeTrackingToken(
+                trackingUrls.trackingToken,
+                campaignId,
+                target.email
+            );
+
+            // 6. Envoyer l'email
+            const result = await EmailService.sendMail(trackedEmailData);
+
+            // 7. Enrichir le résultat avec les informations de tracking
+            if (result.success) {
+                result.trackingToken = trackingUrls.trackingToken;
+                result.trackingEnabled = true;
+                
+                console.log(`📧✅ Email tracké envoyé à ${target.email} (Token: ${trackingUrls.trackingToken})`);
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error(`Erreur lors de l'envoi tracké pour ${target.email}:`, error);
+            throw error;
         }
     }
 
@@ -161,8 +239,7 @@ class EmailController {
      * @param {Object} target - Cible
      * @returns {Object} Données de l'email formatées
      */
-    buildEmailData(campaign, template, target) {
-        // MODIFICATION PRINCIPALE : Séparation de l'adresse d'affichage et d'envoi
+ buildEmailData(campaign, template, target) {
         // L'adresse qui s'affiche dans le client email (celle saisie par l'utilisateur)
         const displayFromAddress = `${campaign.step5.fromName} <${campaign.step5.fromEmail}>`;
         
@@ -177,15 +254,14 @@ class EmailController {
         const personalizedSubject = this.personalizeText(template.subject, target);
 
         return {
-            from: displayFromAddress,  // Adresse qui s'affiche
+            from: displayFromAddress,
             to: target.email,
             subject: personalizedSubject,
             html: personalizedHtml,
-            text: template.content_text || null,
-            // Ajout des en-têtes personnalisés pour masquer l'adresse réelle
+         text: template.content_text || null,
             headers: {
-                'Reply-To': campaign.step5.fromEmail, // Optionnel : où les réponses sont envoyées
-                'Return-Path': campaign.step5.fromEmail, // Optionnel : où les bounces sont envoyés
+                'Reply-To': campaign.step5.fromEmail,
+                'Return-Path': campaign.step5.fromEmail,
             }
         };
     }
@@ -252,11 +328,104 @@ class EmailController {
             });
         }
     }
+
+    /**
+     * Obtient les statistiques en temps réel d'une campagne
+     * GET /api/campaigns/:campaignId/stats
+     */
+    async getCampaignStats(req, res) {
+        try {
+            const { campaignId } = req.params;
+            
+            const stats = await EmailTrackingService.getCampaignStats(campaignId);
+            
+            return res.status(200).json({
+                success: true,
+                data: stats
+            });
+
+        } catch (error) {
+            console.error('Erreur récupération statistiques campagne:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération des statistiques',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Envoie un email de test avec tracking
+     * POST /api/campaigns/:campaignId/send-test-email
+     * Body: { testEmail: string }
+     */
+    async sendTestEmail(req, res) {
+        try {
+            const { campaignId } = req.params;
+            const { testEmail } = req.body;
+
+            if (!testEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email de test requis'
+                });
+            }
+
+            const campaign = await Campaign.findById(campaignId);
+            if (!campaign) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Campagne introuvable'
+                });
+            }
+
+            // Créer une cible temporaire pour le test
+            const testTarget = {
+                firstName: 'Test',
+                lastName: 'User',
+                email: testEmail,
+                position: 'Test Position',
+                country: 'Test Country',
+                office: 'Test Office'
+            };
+
+            // Récupérer le template sélectionné
+            const selectedTemplate = campaign.step3.templates.find(
+                template => template.id === campaign.step3.selectedTemplate
+            );
+
+            if (!selectedTemplate) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Template sélectionné introuvable'
+                });
+            }
+
+            // Envoyer l'email de test avec tracking
+            const result = await this.sendTrackedEmail(campaign, selectedTemplate, testTarget, campaignId);
+
+            return res.status(200).json({
+                success: true,
+                message: `Email de test envoyé à ${testEmail}`,
+                data: result
+            });
+
+        } catch (error) {
+            console.error('Erreur envoi email de test:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'envoi de l\'email de test',
+                error: error.message
+            });
+        }
+    }
 }
 
 const emailController = new EmailController();
 
 module.exports = {
     sendCampaignEmail: emailController.sendCampaignEmail.bind(emailController),
-    testEmailConfiguration: emailController.testEmailConfiguration.bind(emailController)
+    testEmailConfiguration: emailController.testEmailConfiguration.bind(emailController),
+    getCampaignStats: emailController.getCampaignStats.bind(emailController),
+    sendTestEmail: emailController.sendTestEmail.bind(emailController)
 };
