@@ -239,11 +239,11 @@ class EmailController {
      * @param {Object} target - Cible
      * @returns {Object} Données de l'email formatées
      */
- buildEmailData(campaign, template, target) {
+    buildEmailData(campaign, template, target) {
         // L'adresse qui s'affiche dans le client email (celle saisie par l'utilisateur)
         const displayFromAddress = `${campaign.step5.fromName} <${campaign.step5.fromEmail}>`;
         
-        // Personnalisation du contenu HTML
+        // Personnalisation du contenu HTML - CORRECTION: ne plus ajouter de wrapper
         const personalizedHtml = this.personalizeEmailContent(
             template.content_html,
             target,
@@ -258,7 +258,7 @@ class EmailController {
             to: target.email,
             subject: personalizedSubject,
             html: personalizedHtml,
-         text: template.content_text || null,
+            text: template.content_text || null,
             headers: {
                 'Reply-To': campaign.step5.fromEmail,
                 'Return-Path': campaign.step5.fromEmail,
@@ -268,21 +268,29 @@ class EmailController {
 
     /**
      * Personnalise le contenu de l'email
+     * CORRECTION: Plus de wrapper automatique, remplace seulement les variables et les liens
      * @param {string} content - Contenu du template
      * @param {Object} target - Données de la cible
      * @param {string} clonedUrl - URL de la page clonée
      * @returns {string} Contenu personnalisé
      */
     personalizeEmailContent(content, target, clonedUrl) {
-        // Construction du message personnalisé complet
-        const personalizedContent = `
-            <p>Bonjour ${target.firstName} ${target.lastName},</p>
-            ${content}
-            <p><a href="${clonedUrl}">Accéder à votre page</a></p>
-        `;
+        let personalizedContent = content;
 
-        // Remplacement des variables dans le contenu
-        return this.personalizeText(personalizedContent, target);
+        // 1. Remplacer les variables de personnalisation
+        personalizedContent = this.personalizeText(personalizedContent, target);
+
+        // 2. Remplacer les liens génériques par l'URL de la page clonée
+        // Remplace les liens placeholder ou génériques par la vraie URL clonée
+        personalizedContent = personalizedContent
+            .replace(/href=["']#["']/g, `href="${clonedUrl}"`) // Liens avec href="#"
+            .replace(/href=["']javascript:void\(0\)["']/g, `href="${clonedUrl}"`) // Liens javascript:void(0)
+            .replace(/href=["']https?:\/\/example\.com["']/g, `href="${clonedUrl}"`) // Liens exemple
+            .replace(/href=["']https?:\/\/placeholder\.com["']/g, `href="${clonedUrl}"`) // Liens placeholder
+            .replace(/href=["']\{\{landingPageUrl\}\}["']/g, `href="${clonedUrl}"`) // Variable template
+            .replace(/href=["']\{\{clonedUrl\}\}["']/g, `href="${clonedUrl}"`); // Variable template alternative
+
+        return personalizedContent;
     }
 
     /**
