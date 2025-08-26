@@ -543,4 +543,4 @@ class LearningController {
     }
 }
 
-module.exports = LearningController;
+module.exports = LearningController ;

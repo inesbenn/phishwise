@@ -3,20 +3,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
 const cors = require('cors');
-const fs = require('fs'); // Ajout pour la lecture des fichiers HTML
-const path = require('path'); // Ajout pour la manipulation des chemins de fichiers
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 
-// --- Configuration BASE_URL (CRITIQUE pour le tracking) ---
-// S'assure que BASE_URL est défini. Il sera utilisé par le script de tracking.
-if (!process.env.BASE_URL) {
-    // Si BASE_URL n'est pas dans .env, utilise un fallback, mais affiche un avertissement.
+// --- Configuration BASE_URL (CRITIQUE pour le tracking) ---  
+if (!process.env.BASE_URL) { 
     const defaultBaseUrl = process.env.NODE_ENV === 'production' ? 'https://your-production-domain.com' : `http://localhost:${process.env.PORT || 3000}`;
     console.warn(`⚠️ AVERTISSEMENT: La variable d'environnement BASE_URL n'est pas définie. Le tracking pourrait échouer. Utilisation de ${defaultBaseUrl} par défaut.`);
     process.env.BASE_URL = defaultBaseUrl;
-}
-// -----------------------------------------------------------
+} 
 
 // Debug des requêtes (à garder pour le développement, à désactiver en production)
 app.use((req, res, next) => {
@@ -26,14 +23,12 @@ app.use((req, res, next) => {
 
 // Middlewares globaux
 app.use(cors());
-app.use(express.json()); // Pour parser les corps de requête JSON
-app.use(express.urlencoded({ extended: true })); // Pour parser les corps de requête URL-encoded
-app.use(morgan('dev')); // Logger les requêtes HTTP
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
 
-// Servir les fichiers statiques depuis le dossier 'public'
-// C'est CRUCIAL pour que tes pages clonées puissent charger leurs images, CSS, etc.
-app.use(express.static('public'));
-
+// Servir les fichiers statiques depuis le dossier 'public' 
+app.use(express.static('public')); 
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI, {
@@ -41,9 +36,8 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true
 })
     .then(() => console.log('✅ MongoDB connecté'))
-    .catch(err => {
-        console.error('❌ Erreur de connexion MongoDB:', err);
-        // Quitter l'application si la connexion à la BDD échoue
+    .catch(err => { 
+        console.error('❌ Erreur de connexion MongoDB:', err); 
         process.exit(1);
     });
 
@@ -56,119 +50,225 @@ const authMiddleware = require('./middleware/authMiddleware');
 const modelMailRoutes = require('./routes/ModelMail');
 const landingpageRoutes = require('./routes/landingpage');
 const dnsRoutes = require('./routes/dns');
-const emailRoutes = require('./routes/emailRoutes'); 
-const dashboardRoutes = require('./routes/dashboard');// ✅ Ajout de l'import des routes email
-const trackingRoutes = require('./routes/trackingRoutes');
-// Import du contrôleur d'interaction et du service de tracking pour la route de page clonée
+const emailRoutes = require('./routes/emailRoutes');
+const dashboardRoutes = require('./routes/dashboard');
+const trackingRoutes = require('./routes/trackingRoutes'); 
 const learningRoutes = require('./routes/learningRoutes');
-const InteractionController = require('./controllers/DNSController');
-const TrackingService = require('./services/TrackingService'); // Pour l'injection du script
-const Campaign = require('./models/Campaign'); // Pour récupérer les infos de campagne
 
+// NOUVEAU : Import des routes de phishing et de formation
+const phishingRoutes = require('./routes/phishing');
+const trainingRoutes = require('./routes/trainingRoutes');
+const trackingTokenRoutes = require('./routes/trackingToken');
+
+// Import pour la route de page clonée (ancienne méthode - à supprimer si vous utilisez les nouvelles routes)
+const InteractionController = require('./controllers/DNSController');
+const TrackingService = require('./services/TrackingService');
+const Campaign = require('./models/Campaign');
 
 // Routes principales
 app.get('/', (req, res) => res.json({ message: 'Bienvenue sur l\'API PhishWise!' }));
-app.get('/health', (req, res) => res.send('OK')); // Route de health check simple
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'API est saine' })); // Route de health check pour l'API
+app.get('/health', (req, res) => res.send('OK'));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'API est saine' }));
+
+// CORRECTION 1: Route de fallback /learning -> /training (DOIT ÊTRE AVANT LES AUTRES ROUTES)
+app.use('/learning', (req, res) => {
+    const newPath = req.originalUrl.replace('/learning', '/training');
+    console.log(`🔄 Redirection automatique: ${req.originalUrl} → ${newPath}`);
+    res.redirect(301, newPath);
+});
 
 // Routes d'authentification
 app.use('/api/auth', authRoutes);
 
-// Routes utilisateurs (peuvent être protégées)
-app.use('/api/users', userRoutes);
-
-// ⚠️ Middleware d'authentification global
-// Si tu veux l'activer, décommente la ligne suivante pour protéger la plupart de tes API :
-// app.use(authMiddleware);
+// Routes utilisateurs
+app.use('/api/users', userRoutes); 
 
 // Routes de campagne
-app.use('/api/campaigns', campaignRoutes);
-// Les routes de cible peuvent être imbriquées dans campaigns ou séparées si elles sont très indépendantes.
-// Si targetRoutes contient des routes comme /api/campaigns/:campaignId/targets, c'est bon.
+app.use('/api/campaigns', campaignRoutes); 
 app.use('/api/campaigns', targetRoutes);
-app.use('/api/campaigns', emailRoutes); // ✅ Ajout des routes email
+app.use('/api/campaigns', emailRoutes);
 
 // Autres routes API
 app.use('/api', modelMailRoutes);
-app.use('/api/landingpage', landingpageRoutes);
-
+app.use('/api/landingpage', landingpageRoutes); 
 app.use('/api/learning', learningRoutes);
 
-// --- Routes d'Interaction (Tracking) ---
-// Ces routes sont généralement publiques car elles sont appelées depuis les pages clonées.
+// Routes d'interaction (Tracking)
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/dns', dnsRoutes);
-app.use('/api/dashboard', dashboardRoutes); 
-// ----------------------------------------
+app.use('/api/dashboard', dashboardRoutes);
+
+// --- NOUVELLES ROUTES POUR LE SYSTÈME DE PHISHING ---
+// Ces routes sont publiques car elles sont utilisées par les victimes
+
+// CORRECTION 2: S'assurer que les routes phishing sont bien montées
+console.log('🎣 Montage des routes de phishing sur /phishing et /api/phishing');
+app.use('/phishing', phishingRoutes);
+app.use('/api/phishing', phishingRoutes);
+app.use('/api/trackingToken', trackingTokenRoutes);
 
 
-// --- Route pour servir les pages clonées ---
-// Cette route est CRUCIALE et doit être publique pour que les victimes puissent y accéder.
-app.get('/cloned-page/:campaignId', async (req, res) => {
+// CORRECTION 3: S'assurer que les routes training sont bien montées
+console.log('📚 Montage des routes de formation sur /training et /api/training');
+app.use('/training', trainingRoutes);
+app.use('/api/training', trainingRoutes);
+
+// --- Route de redirection pour la compatibilité ---
+// Redirige l'ancienne URL vers la nouvelle
+app.get('/cloned-page/:campaignId', (req, res) => {
+    const { campaignId } = req.params;
+    const queryString = req.url.split('?')[1];
+    const redirectUrl = `/phishing/${campaignId}${queryString ? '?' + queryString : ''}`;
+    
+    console.log(`🔄 Redirection de l'ancienne URL vers: ${redirectUrl}`);
+    res.redirect(301, redirectUrl); // 301 = redirection permanente
+});
+
+// --- Route de test pour vérifier le système de phishing ---
+app.get('/test-phishing/:campaignId', async (req, res) => {
     try {
         const campaignId = req.params.campaignId;
+        const testEmail = req.query.email || 'test@example.com';
         
-        // Validation simple de l'ID de campagne
-        if (!mongoose.Types.ObjectId.isValid(campaignId)) {
-            return res.status(400).send('ID de campagne invalide.');
-        }
-
+        // Vérifier que la campagne existe
         const campaign = await Campaign.findById(campaignId);
         if (!campaign) {
-            console.warn(`Tentative d'accès à une page clonée pour une campagne inexistante: ${campaignId}`);
-            return res.status(404).send('Page de campagne non trouvée.');
+            return res.status(404).json({ 
+                error: 'Campagne non trouvée',
+                campaignId 
+            });
         }
 
-        // Assurez-vous que campaign.step4.clonedTemplateName est bien défini.
-        // Ce champ devrait stocker le nom du fichier HTML (ex: "microsoft", "linkedin")
-        const clonedTemplateName = campaign.step4.clonedTemplateName; 
-        if (!clonedTemplateName) {
-            console.error(`Nom de template cloné manquant pour la campagne ${campaignId}`);
-            return res.status(500).send('Configuration de page clonée manquante.');
-        }
-
-        const templatePath = path.join(__dirname, 'public', 'cloned-templates', `${clonedTemplateName}.html`);
+        // Générer les liens de test
+        const phishingUrl = `${req.protocol}://${req.get('host')}/phishing/${campaignId}?email=${encodeURIComponent(testEmail)}`;
+        const trainingUrl = `${req.protocol}://${req.get('host')}/training/${campaignId}?email=${encodeURIComponent(testEmail)}`;
         
-        if (!fs.existsSync(templatePath)) {
-            console.error(`Fichier template non trouvé pour la campagne ${campaignId}: ${templatePath}`);
-            return res.status(404).send('Page clonée introuvable sur le serveur.');
-        }
-
-        let htmlContent = fs.readFileSync(templatePath, 'utf8');
-
-        // Injecte le code de tracking avec l'ID de la campagne comme token
-        // Le script client côté page clonée utilisera ce campaignId pour toutes ses requêtes d'API de tracking.
-        htmlContent = TrackingService.injectTrackingCode(htmlContent, campaignId); 
-
-        res.set('Content-Type', 'text/html'); // S'assure que le navigateur interprète comme du HTML
-        res.send(htmlContent);
+        res.json({
+            message: 'URLs de test générées',
+            campaign: {
+                id: campaign._id,
+                name: campaign.name
+            },
+            testEmail,
+            urls: {
+                phishing: phishingUrl,
+                training: trainingUrl,
+                capture: `${req.protocol}://${req.get('host')}/api/phishing/${campaignId}/capture`
+            },
+            instructions: [
+                '1. Cliquez sur l\'URL de phishing pour tester la page clonée',
+                '2. Remplissez le formulaire et cliquez sur "Se connecter"',
+                '3. Vous devriez être redirigé vers la page de formation',
+                '4. Vérifiez que les données sont bien capturées dans la base'
+            ]
+        });
 
     } catch (error) {
-        console.error('❌ Erreur lors du service de la page clonée:', error);
-        res.status(500).send('Erreur lors du chargement de la page clonée.');
+        console.error('❌ Erreur test phishing:', error);
+        res.status(500).json({
+            error: 'Erreur lors de la génération des liens de test',
+            details: error.message
+        });
     }
 });
-// ---------------------------------------------
 
+// CORRECTION 4: Route de debug pour vérifier toutes les routes montées
+app.get('/debug/routes', (req, res) => {
+    const routes = [];
+    
+    function extractRoutes(stack, basePath = '') {
+        stack.forEach((layer) => {
+            if (layer.route) {
+                // Route directe
+                routes.push({
+                    path: basePath + layer.route.path,
+                    methods: Object.keys(layer.route.methods),
+                    type: 'route'
+                });
+            } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+                // Sous-routeur
+                const routerPath = layer.regexp.source
+                    .replace('\\', '')
+                    .replace('^', '')
+                    .replace('$', '')
+                    .replace('/?', '')
+                    .replace('(?=\\/|$)', '');
+                
+                const cleanPath = routerPath.replace(/\\\//g, '/').replace(/\(\?\:\(\?\:\[\^\\\/\]\)\+\|\$\)/g, '');
+                
+                routes.push({
+                    path: basePath + cleanPath,
+                    type: 'router',
+                    routes: layer.handle.stack.length
+                });
+                
+                extractRoutes(layer.handle.stack, basePath + cleanPath);
+            }
+        });
+    }
+    
+    extractRoutes(app._router.stack);
+    
+    res.json({
+        totalRoutes: routes.length,
+        routes: routes.sort((a, b) => a.path.localeCompare(b.path)),
+        important: {
+            phishing: routes.filter(r => r.path.includes('phishing')),
+            training: routes.filter(r => r.path.includes('training')),
+            api: routes.filter(r => r.path.includes('/api/'))
+        }
+    });
+});
+
+// CORRECTION 5: Route de test simple pour vérifier les captures
+app.post('/test-capture', (req, res) => {
+    console.log('📊 Test de capture reçu:', req.body);
+    res.json({
+        success: true,
+        message: 'Capture de test réussie',
+        received: req.body
+    });
+});
 
 // Gestion des routes non trouvées (404)
 app.use((req, res) => {
     console.log(`❌ Route non trouvée: ${req.method} ${req.originalUrl}`);
-    res.status(404).json({ error: 'Route non trouvée' });
+    
+    // Suggestions pour routes similaires
+    const suggestions = [];
+    if (req.originalUrl.includes('learning')) {
+        suggestions.push(`Essayez ${req.originalUrl.replace('learning', 'training')}`);
+    }
+    if (req.originalUrl.includes('phishing') && !req.originalUrl.includes('/api/')) {
+        suggestions.push(`Pour l'API: /api${req.originalUrl}`);
+    }
+    
+    res.status(404).json({ 
+        error: 'Route non trouvée',
+        requested: `${req.method} ${req.originalUrl}`,
+        suggestions: suggestions.length > 0 ? suggestions : ['Vérifiez /debug/routes pour voir toutes les routes disponibles']
+    });
 });
 
 // Gestion globale des erreurs (500) - DOIT ÊTRE LA DERNIÈRE FONCTION MIDDLEWARE
 app.use((err, req, res, next) => {
-    console.error('❌ Erreur serveur:', err.stack); // Log complet de l'erreur
+    console.error('❌ Erreur serveur:', err.stack);
     res.status(500).json({
         message: 'Erreur serveur interne',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined // Affiche le message d'erreur en dev
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Serveur démarré sur le port ${PORT}`);
     console.log(`🔗 BASE_URL configuré pour le tracking: ${process.env.BASE_URL}`);
+    console.log(`🎣 Routes de phishing disponibles sur: /phishing/:campaignId`);
+    console.log(`📚 Routes de formation disponibles sur: /training/:campaignId`);
+    console.log(`🧪 Test du système disponible sur: /test-phishing/:campaignId`);
+    console.log(`🔍 Debug des routes disponible sur: /debug/routes`);
+    console.log(`🔄 Redirection automatique /learning → /training activée`);
 });
 
 module.exports = app;
