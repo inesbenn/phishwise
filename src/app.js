@@ -59,6 +59,8 @@ const learningRoutes = require('./routes/learningRoutes');
 const phishingRoutes = require('./routes/phishing');
 const trainingRoutes = require('./routes/trainingRoutes');
 const trackingTokenRoutes = require('./routes/trackingToken');
+const analyticsRoutes = require('./routes/analytics');
+
 
 // Import pour la route de page clonée (ancienne méthode - à supprimer si vous utilisez les nouvelles routes)
 const InteractionController = require('./controllers/DNSController');
@@ -106,12 +108,15 @@ console.log('🎣 Montage des routes de phishing sur /phishing et /api/phishing'
 app.use('/phishing', phishingRoutes);
 app.use('/api/phishing', phishingRoutes);
 app.use('/api/trackingToken', trackingTokenRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
 
 
 // CORRECTION 3: S'assurer que les routes training sont bien montées
 console.log('📚 Montage des routes de formation sur /training et /api/training');
 app.use('/training', trainingRoutes);
 app.use('/api/training', trainingRoutes);
+
 
 // --- Route de redirection pour la compatibilité ---
 // Redirige l'ancienne URL vers la nouvelle

