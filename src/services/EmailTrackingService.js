@@ -1,4 +1,4 @@
-// services/EmailTrackingService.js
+// services/EmailTrackingService.js - VERSION CORRIGÉE
 const Campaign = require('../models/Campaign');
 const crypto = require('crypto');
 
@@ -8,10 +8,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Génère un token de tracking unique pour un email
-     * @param {string} campaignId - ID de la campagne
-     * @param {string} targetEmail - Email de la cible
-     * @returns {string} Token de tracking
+     * Génère un token de tracking unique pour un email 
      */
     generateTrackingToken(campaignId, targetEmail) {
         const data = `${campaignId}-${targetEmail}-${Date.now()}`;
@@ -19,10 +16,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Génère les URLs de tracking pour un email
-     * @param {string} campaignId - ID de la campagne
-     * @param {string} targetEmail - Email de la cible
-     * @returns {Object} URLs de tracking
+     * Génère les URLs de tracking pour un email 
      */
     generateTrackingUrls(campaignId, targetEmail) {
         const trackingToken = this.generateTrackingToken(campaignId, targetEmail);
@@ -35,13 +29,9 @@ class EmailTrackingService {
     }
 
     /**
-     * Injecte le pixel de tracking d'ouverture dans le contenu HTML
-     * @param {string} htmlContent - Contenu HTML de l'email
-     * @param {string} openTrackingUrl - URL du pixel de tracking
-     * @returns {string} Contenu HTML avec pixel de tracking
+     * Injecte le pixel de tracking d'ouverture dans le contenu HTML 
      */
-    injectOpenTracking(htmlContent, openTrackingUrl) {
-        // Pixel de tracking invisible (1x1 transparent)
+    injectOpenTracking(htmlContent, openTrackingUrl) { 
         const trackingPixel = `
             <img src="${openTrackingUrl}" 
                  width="1" height="1" 
@@ -55,8 +45,7 @@ class EmailTrackingService {
                         margin:0 !important;"
                  alt="" />
         `;
-
-        // Injecter le pixel juste avant la fermeture du body ou à la fin si pas de body
+ 
         if (htmlContent.includes('</body>')) {
             return htmlContent.replace('</body>', `${trackingPixel}</body>`);
         } else {
@@ -65,25 +54,19 @@ class EmailTrackingService {
     }
 
     /**
-     * Remplace tous les liens dans le contenu HTML par des liens trackés
-     * @param {string} htmlContent - Contenu HTML de l'email
-     * @param {string} clickTrackingBaseUrl - URL de base pour le tracking des clics
-     * @returns {string} Contenu HTML avec liens trackés
+     * Remplace tous les liens dans le contenu HTML par des liens trackés 
      */
     injectClickTracking(htmlContent, clickTrackingBaseUrl) {
-        // Regex pour matcher les liens href
-        const linkRegex = /href\s*=\s*["']([^"']+)["']/gi;
+        const linkRegex = /href\s*=\s*["']([^"']+)["']/gi; 
         
-        return htmlContent.replace(linkRegex, (match, originalUrl) => {
-            // Ne pas tracker les liens de tracking déjà présents ou les ancres
+        return htmlContent.replace(linkRegex, (match, originalUrl) => { 
             if (originalUrl.includes('/api/tracking/') || 
                 originalUrl.startsWith('#') || 
                 originalUrl.startsWith('mailto:') || 
                 originalUrl.startsWith('tel:')) {
                 return match;
-            }
-
-            // Encoder l'URL originale pour la passer en paramètre
+            } 
+ 
             const encodedUrl = encodeURIComponent(originalUrl);
             const trackedUrl = `${clickTrackingBaseUrl}?url=${encodedUrl}`;
             
@@ -92,24 +75,19 @@ class EmailTrackingService {
     }
 
     /**
-     * Enregistre un token de tracking dans la base de données
-     * @param {string} trackingToken - Token de tracking
-     * @param {string} campaignId - ID de la campagne
-     * @param {string} targetEmail - Email de la cible
+     * Enregistre un token de tracking dans la base de données 
      */
     async storeTrackingToken(trackingToken, campaignId, targetEmail) {
         try {
             const campaign = await Campaign.findById(campaignId);
             if (!campaign) {
                 throw new Error('Campagne introuvable');
-            }
-
-            // Initialiser le tableau de tracking s'il n'existe pas
+            } 
+ 
             if (!campaign.emailTracking) {
                 campaign.emailTracking = [];
             }
-
-            // Vérifier si ce token existe déjà
+ 
             const existingTracking = campaign.emailTracking.find(
                 t => t.trackingToken === trackingToken
             );
@@ -121,12 +99,13 @@ class EmailTrackingService {
                     sentAt: new Date(),
                     opened: false,
                     openedAt: null,
+                    openCount: 0, // CORRECTION: Initialiser à 0
                     clicks: [],
                     clickCount: 0
                 });
 
                 await campaign.save();
-                console.log(`📧 Token de tracking ${trackingToken} stocké pour ${targetEmail}`);
+                console.log(`Token de tracking ${trackingToken} stocké pour ${targetEmail}`);
             }
 
         } catch (error) {
@@ -135,9 +114,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Enregistre une ouverture d'email
-     * @param {string} trackingToken - Token de tracking
-     * @param {Object} metadata - Métadonnées de la requête (IP, User-Agent, etc.)
+     * Enregistre une ouverture d'email - CORRECTION MAJEURE
      */
     async trackEmailOpen(trackingToken, metadata = {}) {
         try {
@@ -146,7 +123,7 @@ class EmailTrackingService {
             });
 
             if (!campaign) {
-                console.warn(`⚠️  Token de tracking introuvable: ${trackingToken}`);
+                console.warn(`Token de tracking introuvable: ${trackingToken}`);
                 return false;
             }
 
@@ -154,18 +131,27 @@ class EmailTrackingService {
                 t => t.trackingToken === trackingToken
             );
 
-            if (tracking && !tracking.opened) {
-                tracking.opened = true;
-                tracking.openedAt = new Date();
-                tracking.openMetadata = {
-                    ipAddress: metadata.ipAddress,
-                    userAgent: metadata.userAgent,
-                    timestamp: new Date()
-                };
+            if (tracking) {
+                // CORRECTION: Toujours incrémenter openCount, même si déjà ouvert
+                tracking.openCount = (tracking.openCount || 0) + 1;
+                
+                // Marquer comme ouvert si première ouverture
+                if (!tracking.opened) {
+                    tracking.opened = true;
+                    tracking.openedAt = new Date();
+                    tracking.openMetadata = {
+                        ipAddress: metadata.ipAddress,
+                        userAgent: metadata.userAgent,
+                        timestamp: new Date()
+                    };
+                }
+
+                // Mettre à jour la dernière activité
+                tracking.lastActivity = new Date();
 
                 await campaign.save();
                 
-                console.log(`📖 Email ouvert: ${tracking.targetEmail} (Token: ${trackingToken})`);
+                console.log(`Email ouvert (${tracking.openCount}x): ${tracking.targetEmail} (Token: ${trackingToken})`);
                 
                 // Mettre à jour les statistiques en temps réel
                 await this.updateCampaignStats(campaign._id);
@@ -181,10 +167,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Enregistre un clic sur un lien
-     * @param {string} trackingToken - Token de tracking
-     * @param {string} originalUrl - URL originale cliquée
-     * @param {Object} metadata - Métadonnées de la requête
+     * Enregistre un clic sur un lien - CORRECTION MAJEURE
      */
     async trackEmailClick(trackingToken, originalUrl, metadata = {}) {
         try {
@@ -193,7 +176,7 @@ class EmailTrackingService {
             });
 
             if (!campaign) {
-                console.warn(`⚠️  Token de tracking introuvable: ${trackingToken}`);
+                console.warn(`Token de tracking introuvable: ${trackingToken}`);
                 return false;
             }
 
@@ -202,10 +185,11 @@ class EmailTrackingService {
             );
 
             if (tracking) {
-                // Marquer comme ouvert si ce n'est pas déjà fait (clic implique ouverture)
+                // Marquer comme ouvert si ce n'est pas déjà fait
                 if (!tracking.opened) {
                     tracking.opened = true;
                     tracking.openedAt = new Date();
+                    tracking.openCount = 1;
                 }
 
                 // Enregistrer le clic
@@ -219,11 +203,13 @@ class EmailTrackingService {
                     }
                 });
 
+                // CORRECTION: Compter tous les clics
                 tracking.clickCount = tracking.clicks.length;
+                tracking.lastActivity = new Date();
 
                 await campaign.save();
                 
-                console.log(`🖱️  Lien cliqué: ${tracking.targetEmail} → ${originalUrl}`);
+                console.log(`Lien cliqué (${tracking.clickCount}x): ${tracking.targetEmail} → ${originalUrl}`);
                 
                 // Mettre à jour les statistiques en temps réel
                 await this.updateCampaignStats(campaign._id);
@@ -239,8 +225,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Met à jour les statistiques de campagne en temps réel
-     * @param {string} campaignId - ID de la campagne
+     * Met à jour les statistiques de campagne en temps réel - CORRECTION
      */
     async updateCampaignStats(campaignId) {
         try {
@@ -250,14 +235,18 @@ class EmailTrackingService {
             const stats = {
                 totalSent: campaign.emailTracking.length,
                 totalOpened: campaign.emailTracking.filter(t => t.opened).length,
+                totalOpenCount: campaign.emailTracking.reduce((sum, t) => sum + (t.openCount || 0), 0), // NOUVEAU
                 totalClicks: campaign.emailTracking.reduce((sum, t) => sum + (t.clickCount || 0), 0),
                 uniqueClicks: campaign.emailTracking.filter(t => t.clickCount > 0).length
             };
 
             // Calculer les taux
-            stats.openRate = stats.totalSent > 0 ? ((stats.totalOpened / stats.totalSent) * 100).toFixed(1) : 0;
-            stats.clickRate = stats.totalSent > 0 ? ((stats.uniqueClicks / stats.totalSent) * 100).toFixed(1) : 0;
-            stats.clickThroughRate = stats.totalOpened > 0 ? ((stats.uniqueClicks / stats.totalOpened) * 100).toFixed(1) : 0;
+            stats.openRate = stats.totalSent > 0 ? 
+                parseFloat(((stats.totalOpened / stats.totalSent) * 100).toFixed(1)) : 0;
+            stats.clickRate = stats.totalSent > 0 ? 
+                parseFloat(((stats.uniqueClicks / stats.totalSent) * 100).toFixed(1)) : 0;
+            stats.clickThroughRate = stats.totalOpened > 0 ? 
+                parseFloat(((stats.uniqueClicks / stats.totalOpened) * 100).toFixed(1)) : 0;
 
             // Stocker dans la campagne
             campaign.emailStats = {
@@ -267,10 +256,12 @@ class EmailTrackingService {
 
             await campaign.save();
 
-            console.log(`📊 Statistiques mises à jour - Campagne ${campaignId}:`, {
+            console.log(`Statistiques mises à jour - Campagne ${campaignId}:`, {
                 sent: stats.totalSent,
                 opened: stats.totalOpened,
+                totalOpenCount: stats.totalOpenCount, // NOUVEAU
                 clicks: stats.totalClicks,
+                uniqueClicks: stats.uniqueClicks,
                 openRate: `${stats.openRate}%`,
                 clickRate: `${stats.clickRate}%`
             });
@@ -281,9 +272,7 @@ class EmailTrackingService {
     }
 
     /**
-     * Obtient les statistiques détaillées d'une campagne
-     * @param {string} campaignId - ID de la campagne
-     * @returns {Object} Statistiques détaillées
+     * Obtient les statistiques détaillées d'une campagne - CORRECTION
      */
     async getCampaignStats(campaignId) {
         try {
@@ -291,12 +280,12 @@ class EmailTrackingService {
             if (!campaign) {
                 throw new Error('Campagne introuvable');
             }
-
-            // Si pas de tracking, retourner des stats vides
+ 
             if (!campaign.emailTracking || campaign.emailTracking.length === 0) {
                 return {
                     totalSent: 0,
                     totalOpened: 0,
+                    totalOpenCount: 0, // NOUVEAU
                     totalClicks: 0,
                     uniqueClicks: 0,
                     openRate: 0,
@@ -312,25 +301,19 @@ class EmailTrackingService {
                 sent: true,
                 opened: tracking.opened,
                 openedAt: tracking.openedAt,
+                openCount: tracking.openCount || 0, // NOUVEAU
                 clickCount: tracking.clickCount || 0,
-                lastClick: tracking.clicks.length > 0 ? 
-                    tracking.clicks[tracking.clicks.length - 1].clickedAt : null
+                totalClicks: tracking.clicks ? tracking.clicks.length : 0, // VERIFICATION
+                lastClick: tracking.clicks && tracking.clicks.length > 0 ? 
+                    tracking.clicks[tracking.clicks.length - 1].clickedAt : null,
+                lastActivity: tracking.lastActivity
             }));
 
-            // Statistiques globales (utiliser les stats mises en cache si disponibles)
-            const cachedStats = campaign.emailStats;
-            if (cachedStats && 
-                new Date() - new Date(cachedStats.lastUpdated) < 60000) { // Cache valide 1 minute
-                return {
-                    ...cachedStats,
-                    targets
-                };
-            }
-
-            // Recalculer si pas de cache ou cache expiré
+            // Recalculer les statistiques globales
             const stats = {
                 totalSent: campaign.emailTracking.length,
                 totalOpened: campaign.emailTracking.filter(t => t.opened).length,
+                totalOpenCount: campaign.emailTracking.reduce((sum, t) => sum + (t.openCount || 0), 0), // NOUVEAU
                 totalClicks: campaign.emailTracking.reduce((sum, t) => sum + (t.clickCount || 0), 0),
                 uniqueClicks: campaign.emailTracking.filter(t => t.clickCount > 0).length
             };
@@ -354,8 +337,51 @@ class EmailTrackingService {
     }
 
     /**
-     * Nettoie les anciens tokens de tracking (tâche de maintenance)
-     * @param {number} daysOld - Nombre de jours après lesquels nettoyer
+     * NOUVELLE MÉTHODE: Obtient les statistiques détaillées avec toutes les ouvertures
+     */
+    async getDetailedStats(campaignId) {
+        try {
+            const campaign = await Campaign.findById(campaignId);
+            if (!campaign) {
+                throw new Error('Campagne introuvable');
+            }
+
+            const detailedTargets = campaign.emailTracking.map(tracking => {
+                return {
+                    email: tracking.targetEmail,
+                    trackingToken: tracking.trackingToken,
+                    sentAt: tracking.sentAt,
+                    opened: tracking.opened,
+                    openedAt: tracking.openedAt,
+                    openCount: tracking.openCount || 0,
+                    clicks: tracking.clicks || [],
+                    clickCount: tracking.clickCount || 0,
+                    lastActivity: tracking.lastActivity,
+                    metadata: tracking.openMetadata
+                };
+            });
+
+            return {
+                campaignId: campaignId,
+                campaignName: campaign.name,
+                targets: detailedTargets,
+                summary: {
+                    totalSent: detailedTargets.length,
+                    totalOpened: detailedTargets.filter(t => t.opened).length,
+                    totalOpenCount: detailedTargets.reduce((sum, t) => sum + t.openCount, 0),
+                    totalClicks: detailedTargets.reduce((sum, t) => sum + t.clickCount, 0),
+                    uniqueClickers: detailedTargets.filter(t => t.clickCount > 0).length
+                }
+            };
+
+        } catch (error) {
+            console.error('Erreur lors de la récupération des statistiques détaillées:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Nettoie les anciens tokens de tracking
      */
     async cleanupOldTrackingTokens(daysOld = 90) {
         try {
@@ -373,7 +399,7 @@ class EmailTrackingService {
                 }
             );
 
-            console.log(`🧹 Nettoyage des anciens tokens: ${result.modifiedCount} campagnes mises à jour`);
+            console.log(`Nettoyage des anciens tokens: ${result.modifiedCount} campagnes mises à jour`);
             return result;
 
         } catch (error) {

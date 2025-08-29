@@ -1,128 +1,7 @@
-// routes/trackingToken.js
+// routes/trackingToken.js - VERSION CORRIGÉE
 const express = require('express');
 const EmailTrackingService = require('../services/EmailTrackingService');
-const router = express.Router();
-
-/**
- * Route pour tracker l'ouverture des emails
- * GET /api/tracking/open/:token
- */
-router.get('/open/:token', async (req, res) => {
-    try {
-        const { token } = req.params;
-        
-        console.log(`📖 Tentative de tracking d'ouverture - Token: ${token}`);
-
-        // Métadonnées de la requête
-        const metadata = {
-            ipAddress: req.ip || req.connection.remoteAddress,
-            userAgent: req.get('User-Agent'),
-            referer: req.get('Referer'),
-            timestamp: new Date()
-        };
-
-        // Enregistrer l'ouverture
-        const tracked = await EmailTrackingService.trackEmailOpen(token, metadata);
-        
-        if (tracked) {
-            console.log(`✅ Ouverture trackée avec succès pour le token: ${token}`);
-        } else {
-            console.log(`⚠️ Token non trouvé ou déjà ouvert: ${token}`);
-        }
-
-        // Retourner un pixel transparent 1x1
-        const pixelBuffer = Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77QQAAAABJRU5ErkJggg==',
-            'base64'
-        );
-
-        res.set({
-            'Content-Type': 'image/png',
-            'Content-Length': pixelBuffer.length,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
-
-        res.send(pixelBuffer);
-
-    } catch (error) {
-        console.error('Erreur lors du tracking d\'ouverture:', error);
-        
-        // Même en cas d'erreur, retourner le pixel transparent
-        const pixelBuffer = Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77QQAAAABJRU5ErkJggg==',
-            'base64'
-        );
-        res.set('Content-Type', 'image/png');
-        res.send(pixelBuffer);
-    }
-});
-
-/**
- * Route pour tracker les clics sur les liens
- * GET /api/tracking/click/:token?url=originalUrl
- */
-router.get('/click/:token', async (req, res) => {
-    try {
-        const { token } = req.params;
-        const { url } = req.query;
-        
-        console.log(`🖱️ Tentative de tracking de clic - Token: ${token}, URL: ${url}`);
-
-        if (!url) {
-            return res.status(400).json({
-                success: false,
-                message: 'URL de redirection manquante'
-            });
-        }
-
-        // Métadonnées de la requête
-        const metadata = {
-            ipAddress: req.ip || req.connection.remoteAddress,
-            userAgent: req.get('User-Agent'),
-            referer: req.get('Referer'),
-            timestamp: new Date()
-        };
-
-        // Enregistrer le clic
-        const tracked = await EmailTrackingService.trackEmailClick(token, url, metadata);
-        
-        if (tracked) {
-            console.log(`✅ Clic tracké avec succès - Token: ${token}, URL: ${url}`);
-        } else {
-            console.log(`⚠️ Token non trouvé pour le clic: ${token}`);
-        }
-
-        // Rediriger vers l'URL originale
-        const decodedUrl = decodeURIComponent(url);
-        console.log(`🔄 Redirection vers: ${decodedUrl}`);
-        
-        res.redirect(302, decodedUrl);
-
-    } catch (error) {
-        console.error('Erreur lors du tracking de clic:', error);
-        
-        // En cas d'erreur, essayer quand même de rediriger
-        if (req.query.url) {
-            try {
-                const decodedUrl = decodeURIComponent(req.query.url);
-                res.redirect(302, decodedUrl);
-            } catch (decodeError) {
-                res.status(400).json({
-                    success: false,
-                    message: 'URL de redirection invalide'
-                });
-            }
-        } else {
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors du tracking du clic',
-                error: error.message
-            });
-        }
-    }
-});
+const router = express.Router(); 
 
 /**
  * Route pour obtenir les statistiques de tracking d'un token spécifique
@@ -132,52 +11,110 @@ router.get('/stats/:token', async (req, res) => {
     try {
         const { token } = req.params;
         
+        console.log(`📊 Demande de stats pour le token: ${token}`);
+        
         const Campaign = require('../models/Campaign');
+        
+        // ✅ CORRECTION: Utiliser findOne avec condition sur emailTracking.trackingToken
+        // Ne PAS utiliser findById car le token n'est pas un ObjectId
         const campaign = await Campaign.findOne({
             'emailTracking.trackingToken': token
         });
 
         if (!campaign) {
+            console.log(`❌ Token de tracking non trouvé: ${token}`);
             return res.status(404).json({
                 success: false,
-                message: 'Token de tracking non trouvé'
+                message: 'Token de tracking non trouvé',
+                debug: {
+                    searchedToken: token,
+                    tokenLength: token.length,
+                    isValidObjectId: /^[0-9a-fA-F]{24}$/.test(token)
+                }
             });
         }
 
         const tracking = campaign.emailTracking.find(t => t.trackingToken === token);
         
+        if (!tracking) {
+            console.log(`❌ Tracking data non trouvé pour le token: ${token}`);
+            return res.status(404).json({
+                success: false,
+                message: 'Données de tracking non trouvées pour ce token'
+            });
+        }
+
+        // Préparer les données de réponse
+        const statsData = {
+            token: token,
+            campaignId: campaign._id,
+            campaignName: campaign.name,
+            targetEmail: tracking.targetEmail,
+            sentAt: tracking.sentAt,
+            opened: tracking.opened,
+            openedAt: tracking.openedAt,
+            openCount: tracking.openCount || (tracking.opened ? 1 : 0),
+            clickCount: tracking.clickCount || 0,
+            clicks: tracking.clicks || [],
+            lastActivity: tracking.lastActivity || tracking.openedAt,
+            // Métadonnées supplémentaires
+            openMetadata: tracking.openMetadata,
+            bounced: tracking.bounced || false,
+            bounceReason: tracking.bounceReason
+        };
+
+        console.log(`✅ Stats trouvées pour ${tracking.targetEmail}:`, {
+            opened: statsData.opened,
+            clickCount: statsData.clickCount
+        });
+        
         res.json({
             success: true,
-            data: {
-                token: token,
-                targetEmail: tracking.targetEmail,
-                sentAt: tracking.sentAt,
-                opened: tracking.opened,
-                openedAt: tracking.openedAt,
-                clickCount: tracking.clickCount || 0,
-                clicks: tracking.clicks || [],
-                lastActivity: tracking.lastActivity
-            }
+            data: statsData
         });
 
     } catch (error) {
-        console.error('Erreur récupération stats tracking:', error);
+        console.error('❌ Erreur récupération stats tracking:', error);
+        
+        // Log détaillé de l'erreur pour debug
+        console.error('Stack trace:', error.stack);
+        
         res.status(500).json({
             success: false,
             message: 'Erreur lors de la récupération des statistiques',
-            error: error.message
+            error: error.message,
+            debug: {
+                receivedToken: req.params.token,
+                errorType: error.name,
+                mongooseError: error.message.includes('Cast to ObjectId')
+            }
         });
     }
 });
 
 /**
- * Route pour obtenir toutes les statistiques d'une campagne
- * GET /api/tracking/campaign/:campaignId/stats
+ * ✅ NOUVELLE ROUTE: Obtenir les stats par campaignId (pour les ObjectId valides)
+ * GET /api/tracking/campaign-stats/:campaignId
  */
-router.get('/campaign/:campaignId/stats', async (req, res) => {
+router.get('/campaign-stats/:campaignId', async (req, res) => {
     try {
         const { campaignId } = req.params;
         
+        console.log(`📊 Demande de stats de campagne: ${campaignId}`);
+        
+        // Valider que c'est un ObjectId valide
+        if (!/^[0-9a-fA-F]{24}$/.test(campaignId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de campagne invalide',
+                debug: {
+                    receivedId: campaignId,
+                    expectedFormat: 'ObjectId (24 caractères hexadécimaux)'
+                }
+            });
+        }
+
+        // Utiliser le service EmailTrackingService
         const stats = await EmailTrackingService.getCampaignStats(campaignId);
         
         res.json({
@@ -186,7 +123,7 @@ router.get('/campaign/:campaignId/stats', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erreur récupération stats campagne:', error);
+        console.error('❌ Erreur récupération stats campagne:', error);
         res.status(500).json({
             success: false,
             message: 'Erreur lors de la récupération des statistiques de campagne',
@@ -196,56 +133,88 @@ router.get('/campaign/:campaignId/stats', async (req, res) => {
 });
 
 /**
- * Route de debug pour vérifier un token (À SUPPRIMER EN PRODUCTION)
- * GET /api/tracking/debug/:token
+ * Route pour obtenir toutes les statistiques d'une campagne (EXISTANTE - mais clarifiée)
+ * GET /api/tracking/campaign/:campaignId/stats
  */
-router.get('/debug/:token', async (req, res) => {
+router.get('/campaign/:campaignId/stats', async (req, res) => {
     try {
-        const { token } = req.params;
+        const { campaignId } = req.params;
         
-        const Campaign = require('../models/Campaign');
-        const campaign = await Campaign.findOne({
-            'emailTracking.trackingToken': token
-        });
-
-        if (!campaign) {
-            return res.json({
-                found: false,
-                token: token,
-                message: 'Token non trouvé dans aucune campagne'
-            });
-        }
-
-        const tracking = campaign.emailTracking.find(t => t.trackingToken === token);
-        
-        res.json({
-            found: true,
-            token: token,
-            campaign: {
-                id: campaign._id,
-                name: campaign.name
-            },
-            tracking: {
-                targetEmail: tracking.targetEmail,
-                sentAt: tracking.sentAt,
-                opened: tracking.opened,
-                openedAt: tracking.openedAt,
-                clickCount: tracking.clickCount || 0,
-                totalClicks: tracking.clicks ? tracking.clicks.length : 0
-            },
-            urls: {
-                openTracking: `/api/tracking/open/${token}`,
-                clickTracking: `/api/tracking/click/${token}?url=https://example.com`,
-                phishingPage: `/phishing/${campaign._id}?email=${encodeURIComponent(tracking.targetEmail)}&token=${token}`,
-                trainingPage: `/training/${campaign._id}?email=${encodeURIComponent(tracking.targetEmail)}&token=${token}`
-            }
-        });
+        // Rediriger vers la nouvelle route pour éviter la confusion
+        return res.redirect(`/api/tracking/campaign-stats/${campaignId}`);
 
     } catch (error) {
-        console.error('Erreur debug tracking:', error);
+        console.error('❌ Erreur redirection stats campagne:', error);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors du debug',
+            message: 'Erreur lors de la récupération des statistiques de campagne',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * ✅ ROUTE DE DEBUG AMÉLIORÉE: Identifier le type d'identifiant
+ * GET /api/tracking/identify/:identifier
+ */
+router.get('/identify/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
+        const isTrackingToken = identifier.length === 32 && /^[0-9a-fA-F]{32}$/.test(identifier);
+        
+        const Campaign = require('../models/Campaign');
+        let result = {
+            identifier,
+            length: identifier.length,
+            isObjectId,
+            isTrackingToken,
+            found: false,
+            type: null,
+            data: null
+        };
+
+        if (isObjectId) {
+            // Chercher comme campaignId
+            const campaign = await Campaign.findById(identifier);
+            if (campaign) {
+                result.found = true;
+                result.type = 'campaign';
+                result.data = {
+                    id: campaign._id,
+                    name: campaign.name,
+                    emailTrackingCount: campaign.emailTracking ? campaign.emailTracking.length : 0
+                };
+            }
+        }
+        
+        if (isTrackingToken && !result.found) {
+            // Chercher comme tracking token
+            const campaign = await Campaign.findOne({
+                'emailTracking.trackingToken': identifier
+            });
+            if (campaign) {
+                const tracking = campaign.emailTracking.find(t => t.trackingToken === identifier);
+                result.found = true;
+                result.type = 'tracking_token';
+                result.data = {
+                    campaignId: campaign._id,
+                    campaignName: campaign.name,
+                    targetEmail: tracking.targetEmail,
+                    opened: tracking.opened,
+                    clickCount: tracking.clickCount || 0
+                };
+            }
+        }
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('❌ Erreur identification:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'identification',
             error: error.message
         });
     }

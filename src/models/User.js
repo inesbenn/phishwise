@@ -3,13 +3,14 @@ const { Schema, model } = require('mongoose');
 
 const userSchema = new Schema({
   firstName:   { type: String, required: true },  
-  lastName:    { type: String, required: true },   // Champs obligatoires  
+  lastName:    { type: String, required: true },   
   email:       { type: String, required: true, unique: true },  
-  password:    { type: String, required: true, select: false },  // Masqué par défaut :contentReference[oaicite:0]{index=0}  
+  password:    { type: String, required: true, select: false },
   role:        { type: String, enum: ['Admin','Manager','Analyste','Cible'], default: 'Cible' },  
   office:      { type: String },  
   country:     { type: String },  
-  status:      { type: String, enum: ['active','inactive','suspended'], default: 'active' }  // Nouveau statut :contentReference[oaicite:1]{index=1}  
+  status:      { type: String, enum: ['active','inactive'], default: 'active' }, // Seulement actif/inactif
+  refreshToken: { type: String, select: false }
 }, { timestamps: true });
 
 module.exports = model('User', userSchema);

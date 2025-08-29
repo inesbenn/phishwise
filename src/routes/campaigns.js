@@ -1,11 +1,11 @@
 const express = require('express');
-const { body, param } = require('express-validator'); // Gardez validationResult hors des routes pour le middleware
-const mongoose = require('mongoose'); // Toujours nécessaire si vous faites new ObjectId ici
-const Campaign = require('../models/Campaign'); // Nécessaire pour la route GET /
-const Formation = require('../models/Formation'); // Ajouté pour les routes step6
-const User = require('../models/User'); // Ajouté pour les routes step6
+const { body, param } = require('express-validator');
+const mongoose = require('mongoose');
+const Campaign = require('../models/Campaign');
+const Formation = require('../models/Formation');
+const User = require('../models/User');
 const fakeAuthMiddleware = require('../middleware/fakeAuthMiddleware');
-const campaignController = require('../controllers/campaignController'); // Le contrôleur de campagne modifié
+const campaignController = require('../controllers/campaignController');
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.post(
       .isISO8601().withMessage('Date invalide')
       .toDate()
   ],
-  campaignController.createCampaign // Appelle la fonction du contrôleur de campagne
+  campaignController.createCampaign
 );
 
 // GET /api/campaigns — renvoie toutes les campagnes
@@ -32,7 +32,7 @@ router.get(
   fakeAuthMiddleware,
   async (req, res) => {
     try {
-      const campaigns = await Campaign.find(); // Renommé 'camps' en 'campaigns' pour la cohérence
+      const campaigns = await Campaign.find();
       res.json(campaigns);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -55,7 +55,7 @@ router.put(
       .isISO8601().withMessage('Date invalide')
       .toDate()
   ],
-  campaignController.updateStep0 // Appelle la fonction du contrôleur de campagne
+  campaignController.updateStep0
 );
 
 /**
@@ -73,8 +73,8 @@ router.put(
       const campaignId = req.params.id;
       const step6Data = req.body;
       
-      console.log('💾 Sauvegarde step6 pour campagne:', campaignId);
-      console.log('💾 Données reçues:', JSON.stringify(step6Data, null, 2));
+      console.log('Sauvegarde step6 pour campagne:', campaignId);
+      console.log('Données reçues:', JSON.stringify(step6Data, null, 2));
 
       const campaign = await Campaign.findById(campaignId);
       if (!campaign) {
@@ -83,8 +83,7 @@ router.put(
           message: 'Campagne non trouvée'
         });
       }
-
-      // Mise à jour du step6 avec les nouvelles données
+ 
       campaign.step6 = {
         ...campaign.step6,
         ...step6Data,
@@ -92,13 +91,12 @@ router.put(
         configuredAt: new Date(),
         stats: {
           totalFormations: step6Data.assignedFormations?.length || 0,
-          totalModules: 0, // Sera calculé si nécessaire
+          totalModules: 0,
           estimatedTotalTime: "À calculer",
           lastUpdated: new Date()
         }
       };
-
-      // Calculer les statistiques si on a des formations
+ 
       if (step6Data.assignedFormations && step6Data.assignedFormations.length > 0) {
         const formationIds = step6Data.assignedFormations.map(af => af.formationId);
         const formations = await Formation.find({ _id: { $in: formationIds } });
@@ -115,7 +113,7 @@ router.put(
 
       await campaign.save();
 
-      console.log('✅ Step6 sauvegardé avec succès');
+      console.log('Step6 sauvegardé avec succès');
 
       res.status(200).json({
         success: true,
@@ -124,7 +122,7 @@ router.put(
       });
 
     } catch (error) {
-      console.error('❌ Erreur sauvegarde step6:', error);
+      console.error('Erreur sauvegarde step6:', error);
       res.status(500).json({
         success: false,
         message: 'Erreur lors de la sauvegarde',
@@ -148,7 +146,7 @@ router.get(
     try {
       const campaignId = req.params.id;
       
-      console.log('📖 Récupération step6 pour campagne:', campaignId);
+      console.log('Récupération step6 pour campagne:', campaignId);
 
       const campaign = await Campaign.findById(campaignId)
         .populate('step6.assignedFormations.formationId');
@@ -169,7 +167,7 @@ router.get(
       });
 
     } catch (error) {
-      console.error('❌ Erreur récupération step6:', error);
+      console.error('Erreur récupération step6:', error);
       res.status(500).json({
         success: false,
         message: 'Erreur lors de la récupération',
@@ -198,7 +196,7 @@ router.post(
       const campaignId = req.params.id;
       const { formationIds, mandatory = true, dueDate = null } = req.body;
       
-      console.log('🎯 Assignation formations existantes:', { campaignId, formationIds, mandatory, dueDate });
+      console.log('Assignation formations existantes:', { campaignId, formationIds, mandatory, dueDate });
 
       const campaign = await Campaign.findById(campaignId);
       if (!campaign) {
@@ -207,8 +205,7 @@ router.post(
           message: 'Campagne non trouvée'
         });
       }
-
-      // Vérifier que les formations existent
+ 
       const formations = await Formation.find({ 
         '_id': { $in: formationIds },
         isActive: true
@@ -220,8 +217,7 @@ router.post(
           message: 'Une ou plusieurs formations sont invalides ou inactives'
         });
       }
-
-      // Préparer les assignations
+ 
       const assignedFormations = formationIds.map((formationId, index) => ({
         formationId,
         assignedAt: new Date(),
@@ -230,13 +226,11 @@ router.post(
         order: index,
         source: 'library'
       }));
-
-      // Mettre à jour ou créer step6
+ 
       if (!campaign.step6) {
         campaign.step6 = {};
       }
-
-      // Fusionner avec les formations déjà assignées
+ 
       const existingAssignments = campaign.step6.assignedFormations || [];
       const newAssignments = assignedFormations.filter(newAf => 
         !existingAssignments.some(existing => 
@@ -250,7 +244,7 @@ router.post(
 
       await campaign.save();
 
-      console.log('✅ Formations assignées avec succès');
+      console.log('Formations assignées avec succès');
 
       res.status(200).json({
         success: true,
@@ -263,7 +257,7 @@ router.post(
       });
 
     } catch (error) {
-      console.error('❌ Erreur assignation formations:', error);
+      console.error('Erreur assignation formations:', error);
       res.status(500).json({
         success: false,
         message: 'Erreur lors de l\'assignation des formations',
@@ -291,9 +285,9 @@ router.post(
       const campaignId = req.params.id;
       const { formationData, modules, assignmentOptions = {} } = req.body;
       
-      console.log('🧙 Création formation wizard pour campagne:', campaignId);
-      console.log('📝 Données formation:', JSON.stringify(formationData, null, 2));
-      console.log('📋 Modules:', JSON.stringify(modules, null, 2));
+      console.log('Création formation wizard pour campagne:', campaignId);
+      console.log('Données formation:', JSON.stringify(formationData, null, 2));
+      console.log('Modules:', JSON.stringify(modules, null, 2));
 
       const campaign = await Campaign.findById(campaignId);
       if (!campaign) {
@@ -302,15 +296,12 @@ router.post(
           message: 'Campagne non trouvée'
         });
       }
-
-      // Créer ou trouver un utilisateur pour la création
+ 
       let createdBy = null;
-      
-      // Essayer de trouver l'utilisateur à partir du token (si middleware auth présent)
+       
       if (req.user) {
         createdBy = req.user.id;
-      } else {
-        // Fallback: créer/trouver un utilisateur système
+      } else { 
         let systemUser = await User.findOne({ email: 'system@phishwise.com' });
         if (!systemUser) {
           systemUser = new User({
@@ -320,12 +311,11 @@ router.post(
             role: 'admin'
           });
           await systemUser.save();
-          console.log('👤 Utilisateur système créé');
+          console.log('Utilisateur système créé');
         }
         createdBy = systemUser._id;
       }
-
-      // Créer la nouvelle formation
+ 
       const newFormation = new Formation({
         title: formationData.title || 'Formation personnalisée',
         description: formationData.description || 'Formation créée via l\'assistant',
@@ -348,9 +338,8 @@ router.post(
       });
 
       await newFormation.save();
-      console.log('✅ Formation wizard créée avec ID:', newFormation._id);
-
-      // Assigner la formation à la campagne
+      console.log('Formation wizard créée avec ID:', newFormation._id);
+ 
       if (!campaign.step6) {
         campaign.step6 = { assignedFormations: [] };
       }
@@ -376,7 +365,7 @@ router.post(
 
       await campaign.save();
 
-      console.log('✅ Formation wizard assignée à la campagne');
+      console.log('Formation wizard assignée à la campagne');
 
       res.status(201).json({
         success: true,
@@ -389,12 +378,12 @@ router.post(
       });
 
     } catch (error) {
-      console.error('❌ Erreur création formation wizard:', error);
+      console.error('Erreur création formation wizard:', error);
       res.status(500).json({
         success: false,
         message: 'Erreur lors de la création de la formation',
         error: error.message,
-        details: error.errors // Détails Mongoose si disponibles
+        details: error.errors
       });
     }
   }
@@ -415,16 +404,44 @@ router.get(
 
 /**
  * POST /api/campaigns/:id/launch
- * Lance la campagne après validation
+ * Lance la campagne avec programmation ou envoi immédiat
  */
 router.post(
   '/:id/launch',
   fakeAuthMiddleware,
   [
     param('id').isMongoId().withMessage('ID de campagne invalide'),
-    body('scheduledDate').optional().isISO8601().withMessage('Date de programmation invalide').toDate()
+    body('scheduledDate').optional().isISO8601().withMessage('Date de programmation invalide').toDate(),
+    body('sendImmediately').optional().isBoolean().withMessage('sendImmediately doit être un booléen')
   ],
   campaignController.launchCampaign
+);
+
+/**
+ * POST /api/campaigns/:id/cancel
+ * Annule une campagne programmée
+ */
+router.post(
+  '/:id/cancel',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide')
+  ],
+  campaignController.cancelScheduledCampaign
+);
+
+/**
+ * PUT /api/campaigns/:id/reschedule
+ * Reprogramme une campagne avec une nouvelle date
+ */
+router.put(
+  '/:id/reschedule',
+  fakeAuthMiddleware,
+  [
+    param('id').isMongoId().withMessage('ID de campagne invalide'),
+    body('newScheduledDate').isISO8601().withMessage('Nouvelle date programmée requise').toDate()
+  ],
+  campaignController.rescheduleCampaign
 );
 
 /**
@@ -451,6 +468,16 @@ router.get(
     param('id').isMongoId().withMessage('ID de campagne invalide')
   ],
   campaignController.getCampaignValidationStatus
+);
+
+/**
+ * GET /api/campaigns/scheduled
+ * Récupère toutes les campagnes programmées
+ */
+router.get(
+  '/scheduled',
+  fakeAuthMiddleware,
+  campaignController.getScheduledCampaigns
 );
 
 module.exports = router;

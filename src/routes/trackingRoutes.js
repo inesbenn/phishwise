@@ -267,5 +267,102 @@ router.post('/refresh-stats/:campaignId', async (req, res) => {
         });
     }
 });
+/**
+ * GET /api/tracking/recent-events
+ * Endpoint pour récupérer les événements d'email tracking en temps réel
+ * Query params: since=timestamp
+ */
+router.get('/recent-events', async (req, res) => {
+    try {
+        const { since } = req.query;
+        const sinceDate = since ? new Date(since) : new Date(Date.now() - 60000); // Dernière minute
+
+        const Campaign = require('../models/Campaign');
+
+        // Récupérer les événements récents d'email tracking
+        const recentEvents = await Campaign.aggregate([
+            {
+                $match: {
+                    'emailTracking.0': { $exists: true }
+                }
+            },
+            {
+                $unwind: "$emailTracking"
+            },
+            {
+                $match: {
+                    $or: [
+                        { 'emailTracking.openedAt': { $gte: sinceDate } },
+                        { 'emailTracking.clicks.clickedAt': { $gte: sinceDate } }
+                    ]
+                }
+            },
+            {
+                $project: {
+                    campaignId: "$_id",
+                    campaignName: "$name",
+                    targetEmail: "$emailTracking.targetEmail",
+                    opened: "$emailTracking.opened",
+                    openedAt: "$emailTracking.openedAt",
+                    recentClicks: {
+                        $filter: {
+                            input: "$emailTracking.clicks",
+                            cond: { $gte: ["$$this.clickedAt", sinceDate] }
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { openedAt: -1 }
+            },
+            {
+                $limit: 20
+            }
+        ]);
+
+        const events = [];
+        
+        recentEvents.forEach(event => {
+            // Événement d'ouverture
+            if (event.opened && event.openedAt >= sinceDate) {
+                events.push({
+                    type: 'email_open',
+                    campaignId: event.campaignId,
+                    campaignName: event.campaignName,
+                    timestamp: event.openedAt,
+                    targetEmail: event.targetEmail.split('@')[0] + '***@' + event.targetEmail.split('@')[1]
+                });
+            }
+            
+            // Événements de clic
+            event.recentClicks.forEach(click => {
+                events.push({
+                    type: 'email_click',
+                    campaignId: event.campaignId,
+                    campaignName: event.campaignName,
+                    timestamp: click.clickedAt,
+                    url: click.url,
+                    targetEmail: event.targetEmail.split('@')[0] + '***@' + event.targetEmail.split('@')[1]
+                });
+            });
+        });
+
+        // Trier par timestamp
+        events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        res.json({
+            success: true,
+            data: events.slice(0, 10)
+        });
+        
+    } catch (error) {
+        console.error('Erreur récupération événements récents:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération des événements récents',
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;

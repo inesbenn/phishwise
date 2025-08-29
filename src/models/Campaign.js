@@ -9,8 +9,7 @@ const targetSchema = new Schema({
     country: { type: String },
     office: { type: String }
 });
-
-// Define the submissionSchema
+ 
 const submissionSchema = new Schema({
     submittedAt: { type: Date, default: Date.now },
     userAgent: { type: String },
@@ -21,8 +20,7 @@ const submissionSchema = new Schema({
     targetEmail: { type: String },
     metadata: { type: Schema.Types.Mixed }
 });
-
-// Schéma pour les interactions générales (visites, clics)
+ 
 const interactionSchema = new Schema({
     type: {
         type: String,
@@ -43,13 +41,12 @@ const interactionSchema = new Schema({
     downloadedFile: { type: String },
     errorMessage: { type: String }
 });
-
-// NOUVEAU: Schéma pour le tracking des emails
+ 
 const emailTrackingSchema = new Schema({
     trackingToken: { 
         type: String, 
         required: true, 
-        unique: false, // Unique par campagne mais pas globalement
+        unique: false,
         index: true 
     },
     targetEmail: { 
@@ -124,6 +121,33 @@ const campaignSchema = new Schema({
         required: true
     },
     targets: [targetSchema],
+
+    // NOUVEAU: Système de planification des envois
+    scheduledSendDate: {
+        type: Date,
+        index: true // Index pour les recherches de planification
+    },
+    actualSendStartTime: {
+        type: Date
+    },
+    actualSendEndTime: {
+        type: Date
+    },
+    launchedAt: {
+        type: Date
+    },
+    cancelledAt: {
+        type: Date
+    },
+    lastSendResult: {
+        type: Schema.Types.Mixed
+    },
+    lastSendError: {
+        type: String
+    },
+    failedAt: {
+        type: Date
+    },
 
     // Étape 2 : Actualités & Sujets
     step2: {
@@ -355,21 +379,21 @@ const campaignSchema = new Schema({
         configuredAt: { type: Date }
     },
 
-    // NOUVEAU: Système de tracking des emails
+    // Système de tracking des emails
     emailTracking: {
         type: [emailTrackingSchema],
         default: []
     },
 
-    // NOUVEAU: Statistiques d'emails en temps réel (cache)
+    // Statistiques d'emails en temps réel (cache)
     emailStats: {
         totalSent: { type: Number, default: 0 },
         totalOpened: { type: Number, default: 0 },
         totalClicks: { type: Number, default: 0 },
         uniqueClicks: { type: Number, default: 0 },
-        openRate: { type: Number, default: 0 }, // En pourcentage
-        clickRate: { type: Number, default: 0 }, // En pourcentage  
-        clickThroughRate: { type: Number, default: 0 }, // En pourcentage (clics/ouvertures)
+        openRate: { type: Number, default: 0 },
+        clickRate: { type: Number, default: 0 },
+        clickThroughRate: { type: Number, default: 0 },
         bounceCount: { type: Number, default: 0 },
         bounceRate: { type: Number, default: 0 },
         lastUpdated: { type: Date, default: Date.now }
@@ -377,17 +401,20 @@ const campaignSchema = new Schema({
     
     status: {
         type: String,
-        enum: ['draft', 'running', 'completed'],
+        enum: ['draft', 'scheduled', 'running', 'sending', 'sent', 'completed', 'failed', 'cancelled'],
         default: 'draft'
     }
 }, { 
     timestamps: true
 });
 
-// Index pour optimiser les requêtes de tracking
+// Index pour optimiser les requêtes de tracking et de planification
 campaignSchema.index({ 'emailTracking.trackingToken': 1 });
 campaignSchema.index({ 'emailTracking.targetEmail': 1 });
 campaignSchema.index({ 'emailTracking.opened': 1 });
+campaignSchema.index({ status: 1 });
+campaignSchema.index({ scheduledSendDate: 1 });
+campaignSchema.index({ status: 1, scheduledSendDate: 1 });
 
 // Middleware pour mettre à jour updatedAt
 campaignSchema.pre('save', function(next) {
@@ -395,7 +422,7 @@ campaignSchema.pre('save', function(next) {
     next();
 });
 
-// Méthode pour obtenir les statistiques rapides
+// Méthodes pour obtenir les statistiques
 campaignSchema.methods.getQuickStats = function() {
     const tracking = this.emailTracking || [];
     
@@ -406,17 +433,39 @@ campaignSchema.methods.getQuickStats = function() {
         totalClicks: tracking.reduce((sum, t) => sum + (t.clickCount || 0), 0)
     };
 };
-
-// Méthode pour obtenir le taux d'ouverture
+ 
 campaignSchema.methods.getOpenRate = function() {
     const stats = this.getQuickStats();
     return stats.sent > 0 ? ((stats.opened / stats.sent) * 100).toFixed(1) : 0;
 };
-
-// Méthode pour obtenir le taux de clic
+ 
 campaignSchema.methods.getClickRate = function() {
     const stats = this.getQuickStats();
     return stats.sent > 0 ? ((stats.clicked / stats.sent) * 100).toFixed(1) : 0;
+};
+
+// Méthodes pour la planification
+campaignSchema.methods.isScheduled = function() {
+    return this.status === 'scheduled' && this.scheduledSendDate && this.scheduledSendDate > new Date();
+};
+
+campaignSchema.methods.isPastDue = function() {
+    return this.status === 'scheduled' && this.scheduledSendDate && this.scheduledSendDate <= new Date();
+};
+
+campaignSchema.methods.getSchedulingInfo = function() {
+    if (!this.scheduledSendDate) return null;
+    
+    const now = new Date();
+    const scheduledTime = new Date(this.scheduledSendDate);
+    
+    return {
+        scheduledDate: scheduledTime,
+        isPastDue: scheduledTime <= now,
+        timeUntilSend: scheduledTime.getTime() - now.getTime(),
+        status: this.status,
+        canCancel: this.status === 'scheduled' && scheduledTime > now
+    };
 };
 
 module.exports = model('Campaign', campaignSchema);

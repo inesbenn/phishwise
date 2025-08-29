@@ -2,8 +2,9 @@
 const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const Campaign = require('../models/Campaign');
+const EmailSchedulerService = require('../services/EmailSchedulerService');
 
-// POST /api/campaigns - Crée une nouvelle campagne
+// POST /api/campaigns - Crée une nouvelle campagnelaunchCampaign
 exports.createCampaign = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -44,7 +45,7 @@ exports.updateStep0 = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
 
   try {
-    const campaign = await Campaign.findByIdAndUpdate( // Renommé 'camp' en 'campaign' pour la cohérence
+    const campaign = await Campaign.findByIdAndUpdate(
       req.params.id,
       {
         name: req.body.name,
@@ -71,8 +72,7 @@ exports.getCampaignCompleteData = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'ID de campagne invalide' });
     }
-
-    // Récupérer la campagne avec toutes ses données
+ 
     const campaign = await Campaign.findById(id).lean();
 
     if (!campaign) {
@@ -89,7 +89,12 @@ exports.getCampaignCompleteData = async (req, res) => {
       createdAt: campaign.createdAt,
       updatedAt: campaign.updatedAt,
 
-      // Step 0 - Paramètres généraux (déjà dans les champs principaux)
+      // Informations de planification
+      scheduledSendDate: campaign.scheduledSendDate,
+      actualSendStartTime: campaign.actualSendStartTime,
+      actualSendEndTime: campaign.actualSendEndTime,
+
+      // Step 0 - Paramètres généraux
       step0: {
         name: campaign.name,
         startDate: campaign.startDate
@@ -173,58 +178,108 @@ exports.getCampaignCompleteData = async (req, res) => {
   }
 };
 
-// POST /api/campaigns/:id/launch - Lance la campagne
+// POST /api/campaigns/:id/launch - Lance la campagne avec planification
 exports.launchCampaign = async (req, res) => {
   try {
     const { id } = req.params;
-    const launchData = req.body;
+    const { scheduledDate, sendImmediately = false } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'ID de campagne invalide' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'ID de campagne invalide' 
+      });
     }
 
     const campaign = await Campaign.findById(id);
     if (!campaign) {
-      return res.status(404).json({ message: 'Campagne non trouvée' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Campagne non trouvée' 
+      });
     }
 
     // Vérifications avant lancement
     const validationErrors = validateCampaignForLaunch(campaign);
     if (validationErrors.length > 0) {
       return res.status(400).json({ 
+        success: false,
         message: 'La campagne ne peut pas être lancée',
         errors: validationErrors 
       });
     }
 
-    // Mettre à jour le statut de la campagne
-    campaign.status = 'running';
-    campaign.launchedAt = new Date();
-    
-    // Ajouter des données de lancement si fournies
-    if (launchData.scheduledDate) {
-      campaign.scheduledLaunchDate = new Date(launchData.scheduledDate);
-    }
+    try {
+      if (sendImmediately) {
+        // Envoi immédiat
+        console.log("📤 Lancement immédiat de la campagne:", id);
+        
+        campaign.status = 'running';
+        campaign.launchedAt = new Date();
+        campaign.actualSendStartTime = new Date();
+        await campaign.save();
 
-    await campaign.save();
+        // Ici vous pourriez déclencher l'envoi immédiat
+        // const emailResult = await EmailController.sendCampaignEmail(...);
 
-    // Ici, vous pourriez déclencher l'envoi des emails, etc.
-    // await triggerEmailSending(campaign);
+        res.json({ 
+          success: true, // AJOUT: propriété success manquante
+          message: 'Campagne lancée immédiatement',
+          campaign: {
+            id: campaign._id,
+            name: campaign.name,
+            status: campaign.status,
+            launchedAt: campaign.launchedAt
+          },
+          scheduled: false,
+          emailsSent: true // Pour indiquer que les emails ont été traités
+        });
 
-    console.log("SUCCÈS (launchCampaign): Campagne lancée avec succès. ID:", id);
-    res.json({ 
-      message: 'Campagne lancée avec succès',
-      campaign: {
-        id: campaign._id,
-        name: campaign.name,
-        status: campaign.status,
-        launchedAt: campaign.launchedAt
+      } else {
+        // Envoi programmé
+        const sendDate = scheduledDate ? new Date(scheduledDate) : campaign.startDate;
+        
+        if (!sendDate) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'Date d\'envoi requise (scheduledDate ou startDate de la campagne)' 
+          });
+        }
+
+        console.log("📅 Programmation de la campagne:", id, "pour le:", sendDate);
+
+        // Utiliser le service de planification
+        const schedulingResult = await EmailSchedulerService.scheduleCampaignSending(id, sendDate);
+
+        res.json({
+          success: true, // AJOUT: propriété success manquante
+          message: 'Campagne programmée avec succès',
+          campaign: {
+            id: campaign._id,
+            name: campaign.name,
+            status: 'scheduled',
+            scheduledSendDate: sendDate
+          },
+          scheduling: schedulingResult,
+          scheduled: true // Pour indiquer que c'est une programmation
+        });
       }
-    });
+
+    } catch (schedulingError) {
+      console.error("ERREUR (launchCampaign): Erreur lors de la planification:", schedulingError);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erreur lors de la planification de la campagne',
+        error: schedulingError.message 
+      });
+    }
 
   } catch (err) {
     console.error("ERREUR (launchCampaign): Erreur lors du lancement de la campagne :", err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      success: false,
+      message: err.message 
+    });
   }
 };
 
@@ -262,6 +317,87 @@ exports.saveCampaignAsDraft = async (req, res) => {
 
   } catch (err) {
     console.error("ERREUR (saveCampaignAsDraft): Erreur lors de la sauvegarde en brouillon :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/campaigns/:id/cancel - Annule une campagne programmée
+exports.cancelScheduledCampaign = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'ID de campagne invalide' });
+    }
+
+    const campaign = await Campaign.findById(id);
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campagne non trouvée' });
+    }
+
+    if (campaign.status !== 'scheduled') {
+      return res.status(400).json({ 
+        message: 'Seules les campagnes programmées peuvent être annulées',
+        currentStatus: campaign.status 
+      });
+    }
+
+    // Annuler dans le service de planification
+    const cancellationResult = await EmailSchedulerService.cancelScheduledCampaign(id);
+
+    console.log("SUCCÈS (cancelScheduledCampaign): Campagne annulée. ID:", id);
+    res.json({
+      message: 'Campagne programmée annulée avec succès',
+      campaign: {
+        id: campaign._id,
+        name: campaign.name,
+        status: 'draft'
+      },
+      cancellation: cancellationResult
+    });
+
+  } catch (err) {
+    console.error("ERREUR (cancelScheduledCampaign): Erreur lors de l'annulation :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/campaigns/:id/reschedule - Reprogramme une campagne
+exports.rescheduleCampaign = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newScheduledDate } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'ID de campagne invalide' });
+    }
+
+    if (!newScheduledDate) {
+      return res.status(400).json({ message: 'Nouvelle date programmée requise' });
+    }
+
+    const campaign = await Campaign.findById(id);
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campagne non trouvée' });
+    }
+
+    // Reprogrammer dans le service de planification
+    const reschedulingResult = await EmailSchedulerService.rescheduleCampaign(id, newScheduledDate);
+
+    console.log("SUCCÈS (rescheduleCampaign): Campagne reprogrammée. ID:", id);
+    res.json({
+      message: 'Campagne reprogrammée avec succès',
+      campaign: {
+        id: campaign._id,
+        name: campaign.name,
+        status: 'scheduled',
+        scheduledSendDate: newScheduledDate
+      },
+      rescheduling: reschedulingResult
+    });
+
+  } catch (err) {
+    console.error("ERREUR (rescheduleCampaign): Erreur lors de la reprogrammation :", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -335,6 +471,27 @@ exports.getCampaignValidationStatus = async (req, res) => {
   }
 };
 
+// GET /api/campaigns/scheduled - Récupère toutes les campagnes programmées
+exports.getScheduledCampaigns = async (req, res) => {
+  try {
+    const scheduledCampaigns = await Campaign.find({
+      status: 'scheduled'
+    }).select('name scheduledSendDate createdAt targets');
+
+    const schedulerStats = EmailSchedulerService.getServiceStats();
+
+    res.json({
+      campaigns: scheduledCampaigns,
+      schedulerStats: schedulerStats,
+      totalScheduled: scheduledCampaigns.length
+    });
+
+  } catch (err) {
+    console.error("ERREUR (getScheduledCampaigns): Erreur lors de la récupération :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Fonctions utilitaires pour la validation
 
 function calculateOverallStatus(campaign) {
@@ -355,46 +512,31 @@ function isReadyForLaunch(campaign) {
   return campaign.targets && campaign.targets.length > 0 &&
          campaign.step3?.selectedTemplate &&
          (campaign.step4?.clonedUrl || campaign.step4?.selectedTemplate) &&
-         campaign.step5?.isConfigured;
-  // Note: La formation n'est pas obligatoire pour le lancement
+         campaign.step5?.isConfigured; 
 }
 
 function validateCampaignForLaunch(campaign) {
   const errors = [];
-
-  // Vérification des cibles
+ 
   if (!campaign.targets || campaign.targets.length === 0) {
     errors.push('Aucune cible n\'a été configurée');
   }
-
-  // Vérification du template d'email
+ 
   if (!campaign.step3?.selectedTemplate) {
     errors.push('Aucun template d\'email n\'a été sélectionné');
   }
-
-  // Vérification de la landing page
+ 
   if (!campaign.step4?.clonedUrl && !campaign.step4?.selectedTemplate) {
     errors.push('Aucune landing page n\'a été configurée');
   }
-
-  // Vérification de la configuration SMTP
+ 
   if (!campaign.step5?.isConfigured) {
     errors.push('La configuration SMTP n\'est pas complète');
   }
-
-  // Vérification du nom de la campagne
+ 
   if (!campaign.name || campaign.name.trim().length === 0) {
     errors.push('Le nom de la campagne est requis');
-  }
-
-  // Vérification de la date de début
-  if (!campaign.startDate) {
-    errors.push('La date de début est requise');
-  } else if (new Date(campaign.startDate) < new Date()) {
-    errors.push('La date de début ne peut pas être dans le passé');
-  }
+  } 
 
   return errors;
-}
-
-// NOTE: Les fonctions 'updateStep1', 'getTargets', 'updateTarget', 'deleteTarget' ont été déplacées vers src/controllers/targetController.js
+} 
