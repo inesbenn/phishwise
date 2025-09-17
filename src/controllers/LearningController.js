@@ -1,4 +1,4 @@
-// controllers/LearningController.js
+// controllers/LearningController.js - VERSION CORRIGÉE
 const Formation = require('../models/Formation');
 const UserProgress = require('../models/UserProgress');
 const Campaign = require('../models/Campaign');
@@ -249,12 +249,16 @@ class LearningController {
                             status: progress.status,
                             overallProgress: progress.overallProgress,
                             completedAt: progress.completedAt,
-                            badgeEarned: progress.badgeEarned
+                            badgeEarned: progress.badgeEarned,
+                            attempts: progress.modules.reduce((total, module) => total + module.attempts.length, 0),
+                            totalTimeSpent: progress.modules.reduce((total, module) => total + module.timeSpent, 0)
                         } : {
                             status: 'not_started',
                             overallProgress: 0,
                             completedAt: null,
-                            badgeEarned: false
+                            badgeEarned: false,
+                            attempts: 0,
+                            totalTimeSpent: 0
                         }
                     };
                 });
@@ -321,11 +325,13 @@ class LearningController {
                 formationProgress = {
                     formationId: formationId,
                     status: 'in_progress',
+                    startedAt: new Date(),
                     modules: formation.modules.map(module => ({
                         moduleId: module.id,
                         completed: false,
                         attempts: [],
-                        timeSpent: 0
+                        timeSpent: 0,
+                        bestScore: 0
                     }))
                 };
 
@@ -344,6 +350,7 @@ class LearningController {
                 message: 'Formation démarrée avec succès'
             });
         } catch (error) {
+            console.error('❌ Erreur démarrage formation:', error);
             res.status(500).json({
                 success: false,
                 message: 'Erreur lors du démarrage de la formation',
@@ -352,10 +359,31 @@ class LearningController {
         }
     }
 
-    // Soumettre une réponse de module
+    // ✅ CORRECTION PRINCIPALE: Soumettre une réponse de module avec gestion des échecs
     static async submitModuleProgress(req, res) {
         try {
-            const { campaignId, targetEmail, formationId, moduleId, answers, timeSpent, score } = req.body;
+            const { 
+                campaignId, 
+                targetEmail, 
+                formationId, 
+                moduleId, 
+                answers, 
+                timeSpent, 
+                score, 
+                passed,
+                attempt = 1 
+            } = req.body;
+
+            console.log('📝 Soumission module:', {
+                campaignId,
+                targetEmail,
+                formationId,
+                moduleId,
+                score,
+                passed,
+                attempt,
+                timeSpent
+            });
 
             const userProgress = await UserProgress.findOne({
                 campaignId,
@@ -391,40 +419,52 @@ class LearningController {
                 });
             }
 
+            // Obtenir la formation pour vérifier les détails du quiz
+            const formation = await Formation.findById(formationId);
+            const module = formation.modules.find(m => m.id === parseInt(moduleId));
+            const passingScore = module?.content?.passingScore || 70;
+
             // Ajouter la tentative
-            const attempt = {
-                answers,
+            const attemptData = {
+                attemptedAt: new Date(),
+                answers: answers || {},
                 timeSpent: timeSpent || 0,
                 score: score || 0,
-                passed: score ? score >= 70 : true // Seuil par défaut de 70%
+                passed: passed !== undefined ? passed : (score >= passingScore),
+                attemptNumber: attempt
             };
 
-            moduleProgress.attempts.push(attempt);
+            moduleProgress.attempts.push(attemptData);
             moduleProgress.timeSpent += timeSpent || 0;
             
-            if (attempt.passed) {
+            // ✅ NOUVELLE LOGIQUE: Ne marquer comme complété que si réussi
+            if (attemptData.passed) {
                 moduleProgress.completed = true;
                 moduleProgress.completedAt = new Date();
+                
+                // Mettre à jour le meilleur score
+                if (score && score > moduleProgress.bestScore) {
+                    moduleProgress.bestScore = score;
+                }
+            } else {
+                // Quiz échoué - garder le module comme non complété
+                moduleProgress.completed = false;
+                
+                console.log(`❌ Quiz échoué - Score: ${score}%, Requis: ${passingScore}%, Tentative: ${attempt}`);
             }
 
-            // Mettre à jour le meilleur score
-            if (score && (score > moduleProgress.bestScore || !moduleProgress.bestScore)) {
-                moduleProgress.bestScore = score;
-            }
-
-            // Calculer le progrès global de la formation
+            // Calculer le progrès global de la formation (seulement modules complétés)
             const completedModules = formationProgress.modules.filter(m => m.completed).length;
             formationProgress.overallProgress = Math.round(
                 (completedModules / formationProgress.modules.length) * 100
             );
 
-            // Vérifier si la formation est terminée
+            // Vérifier si la formation est terminée (tous les modules complétés)
             if (formationProgress.overallProgress === 100) {
                 formationProgress.status = 'completed';
                 formationProgress.completedAt = new Date();
                 
-                // Attribuer le badge si nécessaire
-                const formation = await Formation.findById(formationId);
+                // Attribuer le badge si nécessaire 
                 if (formation && formation.badge && !formationProgress.badgeEarned) {
                     formationProgress.badgeEarned = true;
                     formationProgress.badgeEarnedAt = new Date();
@@ -438,28 +478,60 @@ class LearningController {
             userProgress.lastActivity = new Date();
             userProgress.totalTimeSpent += timeSpent || 0;
 
-            // Recalculer le score moyen
-            const allScores = userProgress.formations.flatMap(f => 
+            // Recalculer le score moyen (seulement les tentatives réussies)
+            const allPassedScores = userProgress.formations.flatMap(f => 
                 f.modules.flatMap(m => 
-                    m.attempts.filter(a => a.score > 0).map(a => a.score)
+                    m.attempts.filter(a => a.passed && a.score > 0).map(a => a.score)
                 )
             );
-            userProgress.averageScore = allScores.length > 0 
-                ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+            userProgress.averageScore = allPassedScores.length > 0 
+                ? Math.round(allPassedScores.reduce((a, b) => a + b, 0) / allPassedScores.length)
                 : 0;
 
             await userProgress.save();
 
+            // ✅ NOUVELLE RÉPONSE: Inclure les détails pour la gestion des échecs
+            const responseData = {
+                moduleProgress: {
+                    ...moduleProgress.toObject(),
+                    currentAttempt: attempt,
+                    maxAttempts: 3,
+                    canRetry: !attemptData.passed && attempt < 3,
+                    passingScore: passingScore
+                },
+                formationProgress: formationProgress.overallProgress,
+                badgeEarned: formationProgress.badgeEarned && 
+                    formationProgress.badgeEarnedAt && 
+                    (new Date() - formationProgress.badgeEarnedAt < 1000),
+                quizResult: module?.type === 'quiz' ? {
+                    score: score || 0,
+                    passed: attemptData.passed,
+                    correctAnswers: answers ? Object.keys(answers).filter(qId => {
+                        const question = module.content.questions?.find(q => q.id.toString() === qId);
+                        return question && answers[qId] === question.correctAnswer;
+                    }).length : 0,
+                    totalQuestions: module.content.questions?.length || 0,
+                    passingScore: passingScore,
+                    attemptsLeft: Math.max(0, 3 - attempt)
+                } : null
+            };
+
+            console.log('✅ Progrès enregistré:', {
+                completed: moduleProgress.completed,
+                score: score,
+                passed: attemptData.passed,
+                overallProgress: formationProgress.overallProgress
+            });
+
             res.status(200).json({
                 success: true,
-                data: {
-                    moduleProgress,
-                    formationProgress: formationProgress.overallProgress,
-                    badgeEarned: formationProgress.badgeEarned && formationProgress.badgeEarnedAt.getTime() === new Date(formationProgress.badgeEarnedAt).getTime()
-                },
-                message: 'Progrès enregistré avec succès'
+                data: responseData,
+                message: attemptData.passed ? 
+                    'Module complété avec succès' : 
+                    `Quiz échoué - ${Math.max(0, 3 - attempt)} tentative(s) restante(s)`
             });
         } catch (error) {
+            console.error('❌ Erreur soumission module:', error);
             res.status(500).json({
                 success: false,
                 message: 'Erreur lors de l\'enregistrement du progrès',
@@ -524,7 +596,8 @@ class LearningController {
                         overallProgress: f.overallProgress,
                         completedAt: f.completedAt,
                         badgeEarned: f.badgeEarned,
-                        timeSpent: f.modules.reduce((sum, m) => sum + m.timeSpent, 0)
+                        timeSpent: f.modules.reduce((sum, m) => sum + m.timeSpent, 0),
+                        totalAttempts: f.modules.reduce((sum, m) => sum + m.attempts.length, 0)
                     }))
                 }))
             };
@@ -543,4 +616,4 @@ class LearningController {
     }
 }
 
-module.exports = LearningController ;
+module.exports = LearningController;

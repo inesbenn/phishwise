@@ -45,7 +45,7 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI, {
         
         // INITIALISATION DU SERVICE DE PLANIFICATION APRÈS LA CONNEXION DB
         try {
-            EmailSchedulerService = require('./services/EmailSchedulerService');
+          EmailSchedulerService = require('./services/EmailSchedulerService');
             console.log('📅 Service de planification des emails initialisé');
             
             // Démarrer la récupération des tâches en attente au démarrage
@@ -81,6 +81,13 @@ const phishingRoutes = require('./routes/phishing');
 const trainingRoutes = require('./routes/trainingRoutes');
 const trackingTokenRoutes = require('./routes/trackingToken');
 const analyticsRoutes = require('./routes/analytics'); 
+const followUpRoutes = require('./routes/followUpEmailRoutes');
+const urlScannerRoutes = require('./routes/urlScannerRoutes');
+console.log('📡 Montage des routes URL Scanner sur /api');
+const incidentRoutes = require('./routes/incidentRoutes');
+
+
+
 
 // Import pour la route de page clonée (ancienne méthode - à supprimer si vous utilisez les nouvelles routes)
 const InteractionController = require('./controllers/DNSController');
@@ -169,8 +176,28 @@ app.use('/api/learning', learningRoutes);
 
 // Routes d'interaction (Tracking)
 app.use('/api/tracking', trackingRoutes);
+
+console.log('📡 Montage des routes URL Scanner sur /api');
+app.use('/api', urlScannerRoutes);
+
+app.get('/test-url-scanner', (req, res) => {
+    res.json({
+        message: 'Scanner d\'URL disponible',
+        routes: [
+            'GET /api/scanner-test',
+            'POST /api/check-url',
+            'GET /api/scanner-stats'
+        ],
+        timestamp: new Date().toISOString()
+    });
+});
+app.use('/api/incidents', incidentRoutes);
+
 app.use('/api/dns', dnsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api', urlScannerRoutes);
+
+
 
 // --- NOUVELLES ROUTES POUR LE SYSTÈME DE PHISHING ---
 // Ces routes sont publiques car elles sont utilisées par les victimes
@@ -186,6 +213,9 @@ app.use('/api/analytics', analyticsRoutes);
 console.log('📚 Montage des routes de formation sur /training et /api/training');
 app.use('/training', trainingRoutes);
 app.use('/api/training', trainingRoutes); 
+app.use('/api/followup', followUpRoutes);
+
+
 
 // --- Route de redirection pour la compatibilité ---
 // Redirige l'ancienne URL vers la nouvelle

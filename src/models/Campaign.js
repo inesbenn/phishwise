@@ -42,6 +42,7 @@ const interactionSchema = new Schema({
     errorMessage: { type: String }
 });
  
+// Schéma de tracking des emails mis à jour avec fonctionnalité de suivi
 const emailTrackingSchema = new Schema({
     trackingToken: { 
         type: String, 
@@ -89,6 +90,18 @@ const emailTrackingSchema = new Schema({
     clickCount: { 
         type: Number, 
         default: 0 
+    },
+    
+    // NOUVEAU: Email de rappel/suivi (sans tracking d'ouverture)
+    followUpEmailSent: {
+        type: Boolean,
+        default: false
+    },
+    followUpEmailSentAt: {
+        type: Date
+    },
+    followUpMessageId: {
+        type: String
     },
     
     // Statut et métadonnées
@@ -379,7 +392,7 @@ const campaignSchema = new Schema({
         configuredAt: { type: Date }
     },
 
-    // Système de tracking des emails
+    // Système de tracking des emails (avec suivi intégré)
     emailTracking: {
         type: [emailTrackingSchema],
         default: []
@@ -465,6 +478,68 @@ campaignSchema.methods.getSchedulingInfo = function() {
         timeUntilSend: scheduledTime.getTime() - now.getTime(),
         status: this.status,
         canCancel: this.status === 'scheduled' && scheduledTime > now
+    };
+};
+
+// NOUVELLES MÉTHODES: Statistiques des emails de suivi
+campaignSchema.methods.getFollowUpEmailStats = function() {
+    if (!this.emailTracking || this.emailTracking.length === 0) {
+        return {
+            totalPhishingVictims: 0,
+            followUpEmailsSent: 0,
+            followUpSendRate: 0
+        };
+    }
+    
+    const phishingVictims = this.emailTracking.filter(t => t.clickCount > 0);
+    const followUpsSent = this.emailTracking.filter(t => t.followUpEmailSent);
+    
+    return {
+        totalPhishingVictims: phishingVictims.length,
+        followUpEmailsSent: followUpsSent.length,
+        followUpSendRate: phishingVictims.length > 0 ? 
+            ((followUpsSent.length / phishingVictims.length) * 100).toFixed(1) : 0
+    };
+};
+
+// NOUVELLE MÉTHODE: Obtenir la liste des cibles qui ont besoin d'un email de suivi
+campaignSchema.methods.getTargetsNeedingFollowUp = function() {
+    if (!this.emailTracking || this.emailTracking.length === 0) {
+        return [];
+    }
+    
+    return this.emailTracking
+        .filter(tracking => tracking.clickCount > 0 && !tracking.followUpEmailSent)
+        .map(tracking => ({
+            email: tracking.targetEmail,
+            token: tracking.trackingToken,
+            clickCount: tracking.clickCount,
+            lastActivity: tracking.lastActivity
+        }));
+};
+
+// NOUVELLE MÉTHODE: Marquer un email de suivi comme envoyé
+campaignSchema.methods.markFollowUpEmailSent = function(targetEmail, messageId) {
+    const tracking = this.emailTracking.find(t => t.targetEmail === targetEmail);
+    if (tracking) {
+        tracking.followUpEmailSent = true;
+        tracking.followUpEmailSentAt = new Date();
+        tracking.followUpMessageId = messageId;
+        return this.save();
+    }
+    return Promise.reject(new Error('Email tracking not found for target'));
+};
+
+// NOUVELLE MÉTHODE: Obtenir les statistiques complètes incluant le suivi
+campaignSchema.methods.getCompleteStats = function() {
+    const basicStats = this.getQuickStats();
+    const followUpStats = this.getFollowUpEmailStats();
+    
+    return {
+        ...basicStats,
+        ...followUpStats,
+        openRate: this.getOpenRate(),
+        clickRate: this.getClickRate()
     };
 };
 

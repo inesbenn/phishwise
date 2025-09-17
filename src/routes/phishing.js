@@ -145,8 +145,38 @@ router.get('/:campaignId/email/:token', async (req, res) => {
 
         // Trouver l'email associé au token
         const trackingEntry = campaign.emailTracking.find(t => t.trackingToken === token);
-        if (!trackingEntry) {
-            return res.status(404).send(generateErrorPage('Lien invalide', 'Ce lien n\'est pas valide ou a expiré.'));
+       if (token && token !== 'direct-access') {
+            console.log(`📧 Tentative envoi email de suivi - Token: ${token}, Email: ${finalTargetEmail}`);
+            
+            try {
+                const FollowUpEmailService = require('../services/FollowUpEmailService');
+                
+                // IMPORTANT: Forcer l'envoi sans vérifier si déjà envoyé (pour debug)
+                const followUpResult = await FollowUpEmailService.sendPhishingFollowUpEmail(
+                    campaignId, 
+                    finalTargetEmail, 
+                    token, 
+                    {
+                        triggerType: triggerType,
+                        capturedData: formData,
+                        timestamp: new Date(),
+                        forceResend: true // Flag pour forcer l'envoi
+                    }
+                );
+                
+                console.log(`📧 Résultat email de suivi:`, followUpResult);
+                
+                if (followUpResult.success) {
+                    console.log(`✅ EMAIL DE SUIVI ENVOYÉ À ${finalTargetEmail}`);
+                } else {
+                    console.log(`❌ ÉCHEC EMAIL DE SUIVI: ${followUpResult.message}`);
+                }
+                
+            } catch (followUpError) {
+                console.error('❌ ERREUR EMAIL DE SUIVI:', followUpError.message);
+            }
+        } else {
+            console.log(`⚠️ PAS D'EMAIL DE SUIVI - Token manquant ou invalid: ${token}`);
         }
 
         // Rediriger vers la page de phishing avec l'email
@@ -161,8 +191,10 @@ router.get('/:campaignId/email/:token', async (req, res) => {
     }
 });
 
+// routes/phishing.js - CORRECTION CAPTURE avec prévention doubles envois
+
 /**
- * Route pour capturer les données de phishing
+ * Route pour capturer les données de phishing - CORRIGÉE pour éviter doubles envois
  * POST /api/phishing/:campaignId/capture
  */
 router.post('/:campaignId/capture', async (req, res) => {
@@ -179,7 +211,8 @@ router.post('/:campaignId/capture', async (req, res) => {
             token
         } = req.body;
 
-        console.log(`📊 Capture phishing - Campaign: ${campaignId}, Email: ${targetEmail}, Token: ${token}`);
+        console.log(`📊 CAPTURE PHISHING - Campaign: ${campaignId}, Email: ${targetEmail}, Token: ${token}`);
+        console.log(`📊 TriggerType: ${triggerType}, FormData:`, formData);
 
         // Vérifier que la campagne existe
         const campaign = await Campaign.findById(campaignId);
@@ -190,7 +223,7 @@ router.post('/:campaignId/capture', async (req, res) => {
             });
         }
 
-        // *** CORRECTION CRITIQUE : Récupérer email depuis token si manquant ***
+        // *** RÉCUPÉRATION EMAIL DEPUIS TOKEN ***
         let finalTargetEmail = targetEmail;
         if (token && !targetEmail && token !== 'direct-access') {
             const trackingEntry = campaign.emailTracking?.find(t => t.trackingToken === token);
@@ -224,6 +257,67 @@ router.post('/:campaignId/capture', async (req, res) => {
                 success: false,
                 message: 'Email non autorisé pour cette campagne'
             });
+        }
+
+        // *** NOUVEAU : DÉCLENCHEMENT EMAIL DE SUIVI AUTOMATIQUE AVEC PROTECTION DOUBLES ENVOIS ***
+        let followUpResult = null;
+        if (token && token !== 'direct-access') {
+            console.log(`📧🔄 VÉRIFICATION EMAIL DE SUIVI - Token: ${token}, Email: ${finalTargetEmail}`);
+            
+            try {
+                const FollowUpEmailService = require('../services/FollowUpEmailService');
+                
+                // *** CORRECTION PRINCIPALE : Vérifier si déjà envoyé AVANT de tenter l'envoi ***
+                const trackingEntry = campaign.emailTracking?.find(t => t.trackingToken === token);
+                
+                if (trackingEntry?.followUpEmailSent) {
+                    console.log(`📧⏭️ Email de suivi DÉJÀ ENVOYÉ pour ${finalTargetEmail} - SKIP automatique`);
+                    followUpResult = {
+                        success: false,
+                        message: 'Email de suivi déjà envoyé lors d\'une interaction précédente',
+                        alreadySent: true,
+                        sentAt: trackingEntry.followUpEmailSentAt,
+                        skipped: true
+                    };
+                } else {
+                    console.log(`📧✨ TENTATIVE ENVOI EMAIL DE SUIVI AUTOMATIQUE...`);
+                    
+                    // Envoyer l'email de suivi immédiatement avec marquage de source
+                    followUpResult = await FollowUpEmailService.sendPhishingFollowUpEmail(
+                        campaignId, 
+                        finalTargetEmail, 
+                        token, 
+                        {
+                            triggerType: triggerType,
+                            capturedData: formData,
+                            timestamp: new Date(),
+                            source: 'phishing_capture_auto', // Important : identifier la source
+                            automatic: true
+                        }
+                    );
+                    
+                    console.log(`📧📊 RÉSULTAT EMAIL DE SUIVI AUTOMATIQUE:`, followUpResult);
+                    
+                    if (followUpResult.success) {
+                        console.log(`✅ EMAIL DE SUIVI AUTOMATIQUE ENVOYÉ AVEC SUCCÈS À ${finalTargetEmail}`);
+                    } else if (followUpResult.blocked) {
+                        console.log(`🚫 EMAIL DE SUIVI BLOQUÉ (déjà envoyé): ${followUpResult.message}`);
+                    } else {
+                        console.error(`❌ ÉCHEC EMAIL DE SUIVI AUTOMATIQUE: ${followUpResult.message}`);
+                    }
+                }
+                
+            } catch (followUpError) {
+                // Ne pas faire échouer la capture si l'email de suivi échoue
+                console.error('❌ ERREUR EMAIL DE SUIVI (n\'interrompt pas la capture):', followUpError);
+                followUpResult = {
+                    success: false,
+                    error: followUpError.message,
+                    source: 'error'
+                };
+            }
+        } else {
+            console.log(`⚠️ PAS D'EMAIL DE SUIVI AUTOMATIQUE - Token manquant ou invalid: ${token}`);
         }
 
         // Mise à jour du tracking email si token présent
@@ -265,7 +359,10 @@ router.post('/:campaignId/capture', async (req, res) => {
                 triggerType: triggerType,
                 formData: formData,
                 targetEmail: finalTargetEmail,
-                emailToken: token
+                emailToken: token,
+                followUpEmailTriggered: !!(followUpResult && followUpResult.success),
+                followUpEmailResult: followUpResult,
+                followUpEmailSkipped: !!(followUpResult && followUpResult.skipped)
             }
         });
 
@@ -281,7 +378,10 @@ router.post('/:campaignId/capture', async (req, res) => {
             metadata: {
                 triggerType: triggerType,
                 capturedBy: 'phishing_redirect_script',
-                emailToken: token
+                emailToken: token,
+                followUpEmailTriggered: !!(followUpResult && followUpResult.success),
+                followUpEmailResult: followUpResult,
+                followUpEmailSkipped: !!(followUpResult && followUpResult.skipped)
             }
         });
 
@@ -289,7 +389,7 @@ router.post('/:campaignId/capture', async (req, res) => {
 
         console.log(`✅ Données capturées pour ${finalTargetEmail}`);
 
-        // *** CORRECTION PRINCIPALE : Construction de l'URL de redirection ***
+        // Construction de l'URL de redirection
         let redirectUrl;
         
         // Priorité 1: Email + Token (le plus sûr)
@@ -313,16 +413,37 @@ router.post('/:campaignId/capture', async (req, res) => {
             console.log(`🔄 Redirection de base: ${redirectUrl}`);
         }
 
+        // *** RÉPONSE DÉTAILLÉE avec informations sur l'email de suivi ***
+        let followUpMessage = 'Aucun email de rappel (pas de token)';
+        if (followUpResult) {
+            if (followUpResult.success) {
+                followUpMessage = 'Email de rappel envoyé automatiquement';
+            } else if (followUpResult.skipped || followUpResult.alreadySent) {
+                followUpMessage = 'Email de rappel déjà envoyé précédemment';
+            } else {
+                followUpMessage = followUpResult.message || 'Erreur envoi email de rappel';
+            }
+        }
+
         res.json({
             success: true,
             message: 'Données capturées avec succès',
             redirectUrl: redirectUrl,
+            followUpEmail: {
+                triggered: !!(followUpResult && followUpResult.success),
+                skipped: !!(followUpResult && (followUpResult.skipped || followUpResult.alreadySent)),
+                message: followUpMessage,
+                details: followUpResult
+            },
             debug: {
                 campaignId: campaignId,
                 finalTargetEmail: finalTargetEmail,
                 token: token,
                 triggerType: triggerType,
-                constructedUrl: redirectUrl
+                constructedUrl: redirectUrl,
+                followUpEmailAttempted: !!(token && token !== 'direct-access'),
+                followUpEmailSuccess: !!(followUpResult && followUpResult.success),
+                followUpEmailBlocked: !!(followUpResult && followUpResult.blocked)
             }
         });
 
@@ -331,6 +452,195 @@ router.post('/:campaignId/capture', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erreur lors de la capture des données',
+            error: error.message
+        });
+    }
+});
+
+// *** NOUVELLE ROUTE DE TEST POUR DEBUGGER L'EMAIL DE SUIVI ***
+router.post('/:campaignId/test-followup', async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const { email, forceResend = true } = req.body;
+
+        console.log(`🧪 TEST EMAIL DE SUIVI - Campaign: ${campaignId}, Email: ${email}`);
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email requis pour le test'
+            });
+        }
+
+        const campaign = await Campaign.findById(campaignId);
+        if (!campaign) {
+            return res.status(404).json({
+                success: false,
+                message: 'Campagne non trouvée'
+            });
+        }
+
+        // Trouver ou créer un token pour ce test
+        let testToken = 'test-token-' + Date.now();
+        const trackingEntry = campaign.emailTracking?.find(t => t.targetEmail === email);
+        if (trackingEntry) {
+            testToken = trackingEntry.trackingToken;
+        }
+
+        console.log(`🎯 Token de test: ${testToken}`);
+
+        const FollowUpEmailService = require('../services/FollowUpEmailService');
+        const result = await FollowUpEmailService.sendPhishingFollowUpEmail(
+            campaignId,
+            email,
+            testToken,
+            {
+                triggerType: 'manual_test',
+                forceResend: forceResend,
+                timestamp: new Date()
+            }
+        );
+
+        console.log(`📊 Résultat test:`, result);
+
+        res.json({
+            success: true,
+            message: 'Test terminé',
+            result: result,
+            debug: {
+                campaignId,
+                email,
+                token: testToken,
+                emailTrackingCount: campaign.emailTracking?.length || 0,
+                campaignStep5: campaign.step5
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur test email de suivi:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du test',
+            error: error.message
+        });
+    }
+});
+
+// *** ROUTE DE DIAGNOSTIC COMPLÈTE ***
+router.get('/:campaignId/diagnose/:email', async (req, res) => {
+    try {
+        const { campaignId, email } = req.params;
+        
+        const campaign = await Campaign.findById(campaignId);
+        if (!campaign) {
+            return res.status(404).json({ error: 'Campagne non trouvée' });
+        }
+
+        const trackingEntry = campaign.emailTracking?.find(t => t.targetEmail === email);
+        const target = campaign.targets?.find(t => t.email === email);
+
+        const diagnostic = {
+            campaign: {
+                id: campaignId,
+                name: campaign.name,
+                hasStep5: !!campaign.step5,
+                fromEmail: campaign.step5?.fromEmail,
+                fromName: campaign.step5?.fromName
+            },
+            target: {
+                found: !!target,
+                email: email,
+                details: target
+            },
+            tracking: {
+                found: !!trackingEntry,
+                token: trackingEntry?.trackingToken,
+                followUpSent: trackingEntry?.followUpEmailSent,
+                followUpSentAt: trackingEntry?.followUpEmailSentAt,
+                details: trackingEntry
+            },
+            emailService: {
+                smtpHost: process.env.SMTP_HOST,
+                smtpUser: process.env.SMTP_USER,
+                smtpConfigured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD)
+            }
+        };
+
+        res.json({
+            success: true,
+            diagnostic
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+router.post('/:campaignId/test-followup', async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const { email } = req.body;
+
+        console.log(`🧪 TEST EMAIL DE SUIVI - Campaign: ${campaignId}, Email: ${email}`);
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email requis pour le test'
+            });
+        }
+
+        const campaign = await Campaign.findById(campaignId);
+        if (!campaign) {
+            return res.status(404).json({
+                success: false,
+                message: 'Campagne non trouvée'
+            });
+        }
+
+        // Trouver ou créer un token pour ce test
+        let testToken = 'test-token-' + Date.now();
+        const trackingEntry = campaign.emailTracking?.find(t => t.targetEmail === email);
+        if (trackingEntry) {
+            testToken = trackingEntry.trackingToken;
+        }
+
+        console.log(`🎯 Token de test: ${testToken}`);
+
+        const FollowUpEmailService = require('../services/FollowUpEmailService');
+        const result = await FollowUpEmailService.sendPhishingFollowUpEmail(
+            campaignId,
+            email,
+            testToken,
+            {
+                triggerType: 'manual_test',
+                forceResend: true, // Forcer l'envoi
+                timestamp: new Date()
+            }
+        );
+
+        console.log(`📊 Résultat test:`, result);
+
+        res.json({
+            success: true,
+            message: 'Test terminé',
+            result: result,
+            debug: {
+                campaignId,
+                email,
+                token: testToken,
+                emailTrackingCount: campaign.emailTracking?.length || 0
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur test email de suivi:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du test',
             error: error.message
         });
     }
